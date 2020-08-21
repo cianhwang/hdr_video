@@ -1,0 +1,10 @@
+Minghao/
+*.jpg
+*.jpeg
+*.png
+*.raw
+*.pyc
+*.zip
+.ipynb_checkpoints*
+*.npy
+*~

@@ -1,0 +1,10 @@
+Description: VCM camera; TX2
+
+capture command: nvgstcapture-1.0 -m 1 --sensor-id 0 -A --capture-auto 1 --dump-bayer --file-name qhGrab --aeLock --exposure-time=[$var] --image-res 8
+
+exposure time in logspace 1e-4s to 0.1s (Func: np.logspace(-4.0, -1.0, num = 5))
+
+Set 1: 7596-8263 (num = 4)
+Set 2: 8523-9408
+Set 3: 9669-10552
+Set 4: 10814-11696
