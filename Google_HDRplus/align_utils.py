@@ -59,7 +59,7 @@ def upsample_align_field(align_field):
     upsampled_align_field = 2 * align_field.repeat(2, axis = 0).repeat(2, axis = 1)
     return upsampled_align_field
 
-def align_gauss_pyramid(gpref, gpalt):
+def align_gauss_pyramid(gpref, gpalt, tile_size = 32):
 
     assert len(gpref)== len(gpalt)
     upsampled_align_field = None
@@ -67,7 +67,7 @@ def align_gauss_pyramid(gpref, gpalt):
     idx = 1
     for ref, alt in zip(gpref[len(gpref):0:-1], gpalt[len(gpalt):0:-1]):
         print("level", idx, "aligning")
-        align_field = align_one_level(ref, alt, upsampled_align_field)
+        align_field = align_one_level(ref, alt, upsampled_align_field, tile_size)
         upsampled_align_field = upsample_align_field(align_field)
         idx += 1
     print("level", idx, "aligning")
