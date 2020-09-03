@@ -65,5 +65,23 @@ def plot_histogram(Im, bit_length = 8):
     
     plt.plot(np.arange(0, max_value-1),histr,'r', np.arange(0,max_value-1),histg,'g', np.arange(0,max_value-1),histb, 'b')
     
+def raw_to_stack(raw_img, pattern='rggb'):
+    """Reshape the raw image into depth 4 stack, following order rggb, depth on last channel"""
+    A,B,C,D = raw_img[:-1:2, :-1:2], \
+              raw_img[:-1:2, 1: :2], \
+              raw_img[1: :2, :-1:2], \
+              raw_img[1: :2, 1: :2]
+    if pattern.lower() == 'rggb':
+        return np.stack([A,B,C,D], axis=-1)
+    else:
+        raise NotImplementedError
 
+def stack_to_raw(rggb_stack):
+    H, W, _ = rggb_stack.shape
+    raw_img = np.zeros((2*H, 2*W), rggb_stack.dtype)
+    raw_img[:-1:2, :-1:2] = rggb_stack[..., 0]
+    raw_img[:-1:2, 1: :2] = rggb_stack[..., 1]
+    raw_img[1: :2, :-1:2] = rggb_stack[..., 2]
+    raw_img[1: :2, 1: :2] = rggb_stack[..., 3]
+    return raw_img
 

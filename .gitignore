@@ -9,3 +9,5 @@ Minghao/
 *.npy
 *~
 flow_test/lowlight3_bunny3_video
+*.pt
+*.pth
