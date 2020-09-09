@@ -85,3 +85,7 @@ def stack_to_raw(rggb_stack):
     raw_img[1: :2, 1: :2] = rggb_stack[..., 3]
     return raw_img
 
+def print_model_params(model):
+    print("#total params:", sum(p.numel() for p in model.parameters()), end='')
+    print(" | #trainable params:", sum(p.numel() for p in model.parameters() if p.requires_grad))
+

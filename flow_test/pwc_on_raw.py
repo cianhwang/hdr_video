@@ -128,7 +128,7 @@ def warped_raw(rIm_ref, rIm_alt, display = True):
     img1 = np.tile(gray_ref, (3, 1, 1)).transpose((1, 2, 0))
     img2 = np.tile(gray_alt, (3, 1, 1)).transpose((1, 2, 0))
     flow, warped = test_raw_pair(img1, img2, rIm_ref + bk_lvl, rIm_alt + bk_lvl, display = display)
-    return warped
+    return flow, warped
 
 if __name__ == "__main__":
     rIm=read_raw("../static_videos/lowlight3_frame16_bunny_3.raw", frame =16)
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     rIm_ref = rIm[ref_idx]
     alt_idx = 15
     rIm_alt = rIm[alt_idx]
-    warped = warped_raw(rIm_ref, rIm_alt)
+    _, warped = warped_raw(rIm_ref, rIm_alt)
     print_stat("rIm_ref", rIm_ref+ bk_lvl)
     print_stat("rIm_alt", rIm_alt+ bk_lvl)
     print_stat("warped", warped[warped > 0])
