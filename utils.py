@@ -3,9 +3,9 @@ from scipy import interpolate as interp
 import matplotlib.pyplot as plt
 
 def print_stat(narray_name, narray):
-    print(narray_name, " shape: ", narray.shape, "dtype:", narray.dtype)
+    print(narray_name, "shape: ", narray.shape, "dtype:", narray.dtype)
     arr = narray.flatten()
-    print(narray_name + " stat: max: {}, min: {}, mean: {}, std: {}".format(arr.max(), arr.min(), arr.mean(), arr.std()))
+    print(narray_name , "stat: max: {}, min: {}, mean: {}, std: {}".format(arr.max(), arr.min(), arr.mean(), arr.std()))
 
 def read_raw(fileName, frame = 1, rows = 2174, runL = 3968):
 
