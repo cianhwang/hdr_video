@@ -9,16 +9,21 @@ import data_loader as data_loader
 import torch.nn as nn
 import os
 from evaluate import evaluate
+from tensorboardX import SummaryWriter
+import time
 
 parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
 #                    help="Directory containing the dataset")
+parser.add_argument('--logs_dir', type=str,
+                    default='runs/'+time.strftime("%m%d_%H_%M"),
+                    help='Directory in which Tensorboard logs wil be stored')
 parser.add_argument('--model_dir', default='.',
                     help="Directory containing params.json")
 parser.add_argument('--restore_file', default=None,
                     help="Optional, name of the file in --model_dir containing weights to reload before training")
 
-def train(model, optimizer, loss_fn, dataloader, params):
+def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
 
     model.train()
     loss_avg = model_utils.RunningAverage()
@@ -40,8 +45,12 @@ def train(model, optimizer, loss_fn, dataloader, params):
             t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
             t.update()
 
+        writer.add_scalar('Stats/loss', loss_avg(), epoch)
+        for n, p in model.named_parameters():
+            if(p.requires_grad) and ("bias" not in n) and ("bn" not in n):
+                writer.add_histogram('hist/'+n, p, epoch)
     
-def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_fn, params, model_dir, restore_file=None):
+def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimizer, loss_fn, params, model_dir, restore_file=None):
 
     if restore_file is not None:
         restore_path = os.path.join(
@@ -52,9 +61,9 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
 
     for epoch in range(params.num_epochs):
 
-        train(model, optimizer, loss_fn, train_dataloader, params)
+        train(epoch, model, writer, optimizer, loss_fn, train_dataloader, params)
 
-        val_loss = evaluate(model, loss_fn, val_dataloader, params)
+        val_loss = evaluate(epoch, model, writer, loss_fn, val_dataloader, params)
 
         is_best = val_loss <= best_val_loss
 
@@ -80,15 +89,18 @@ if __name__=='__main__':
     if params.cuda:
         torch.cuda.manual_seed(38)
 
+    if not os.path.exists(args.logs_dir):
+        os.makedirs(args.logs_dir)
+    writer = SummaryWriter(args.logs_dir)
+        
     dataloaders = data_loader.fetch_dataloader(params)
-    dataloader = dataloaders['train']
+    train_dl = dataloaders['train']
+    val_dl = dataloaders['val']
 
     model = net.Net().cuda() if params.cuda else net.Net()
 
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate)
 
-    loss_fn = nn.MSELoss()
+    loss_fn = nn.L1Loss()
     
-    for epoch in range(2):
-        train(model, optimizer, loss_fn, dataloader, params)
-
+    train_and_evaluate(model, writer, train_dl, val_dl, optimizer, loss_fn, params, args.model_dir, args.restore_file)

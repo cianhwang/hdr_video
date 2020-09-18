@@ -111,14 +111,15 @@ def raw_normalize(*raw_imgs):
 
 class HDRDataset(Dataset):
 
-    def __init__(self, transform = None):
+    def __init__(self, transform = None, length = 1000):
         self.transform = transform
         self.ref = np.load('data/ref.npy')
         self.alt = np.load('data/alt.npy')
         self.gt = np.load('data/gt.npy')
         self.ref, self.alt, self.gt = raw_normalize(self.ref, self.alt, self.gt)
+        self.length = length
     def __len__(self):
-        return 1000
+        return self.length
 
     def __getitem__(self, idx):
         #if self.transform is not None:
@@ -130,15 +131,15 @@ def fetch_dataloader(params = None, types = 'train'):
 
     dataloaders = {}
 
-    for split in ['train', 'test']:
+    for split in ['train', 'val','test']:
         if split == 'train':
             dl = DataLoader(HDRDataset(train_transformer),
                             batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
         else:
-            dl = DataLoader(HDRDataset(eval_transformer),
-                            batch_size = params.batch_size, shuffle = False,
+            dl = DataLoader(HDRDataset(eval_transformer, 100),
+                            batch_size = params.val_batch_size, shuffle = False,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
         dataloaders[split] = dl

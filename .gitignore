@@ -11,3 +11,6 @@ Minghao/
 flow_test/lowlight3_bunny3_video
 *.pt
 *.pth
+*.tar
+model/runs/
+model/ckpt/

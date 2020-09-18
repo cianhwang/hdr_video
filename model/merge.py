@@ -92,6 +92,13 @@ class MergeNet(nn.Module):
         self.layer2 = BasicBlock(16, 32)
         self.layer3 = BasicBlock(32, 32)
         self.layer4 = conv1x1(32, 4)
+        
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
 
@@ -101,7 +108,8 @@ class MergeNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out += ref
+        out = out + ref
+        out = F.sigmoid(out)
         return out
 
 

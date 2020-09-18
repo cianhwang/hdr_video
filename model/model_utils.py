@@ -37,11 +37,9 @@ class RunningAverage():
 
 def save_checkpoint(state, is_best, checkpoint):
     filepath = os.path.join(checkpoint, 'last.pth.tar')
-    if not os.path.exist(checkpoint):
+    if not os.path.exists(checkpoint):
         print("Checkpoint Directory does not exist. Making Directory {}".format(checkpoint))
         os.mkdir(checkpoint)
-    else:
-        print("Checkpoint Directory exists.")
     torch.save(state, filepath)
     if is_best:
         shutil.copyfile(filepath, os.path.join(checkpoint, 'best.pth.tar'))
