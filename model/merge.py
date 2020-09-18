@@ -109,7 +109,7 @@ class MergeNet(nn.Module):
         out = self.layer3(out)
         out = self.layer4(out)
         out = out + ref
-        out = F.sigmoid(out)
+#         out = F.sigmoid(out)
         return out
 
 
