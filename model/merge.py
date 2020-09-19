@@ -142,11 +142,10 @@ if __name__ == '__main__':
         gt = torch.rand(2, 4, 256, 256).cuda()
         pred = torch.rand(2, 4, 256, 256).cuda()
         optimizer.zero_grad()
-        for t in range(8):
+        for t in range(7):
             print("test seq", t)
             inputs = torch.rand(2, 10, 256, 256).cuda()
-            outputs = model(inputs)
-            pred += outputs.clone()
+            pred += model(inputs)
         loss = criterion(pred, gt)
         loss.backward()
         optimizer.step()

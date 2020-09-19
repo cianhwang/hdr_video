@@ -26,6 +26,9 @@ class Net(nn.Module):
         batch_size, C, H, W = stack_tensor.size()
         assert C == 4
         return F.pixel_shuffle(stack_tensor, 2)
+    
+    def init_hidden(self):
+        self.merge_net.init_hidden()
 
         
     def forward(self, x):
@@ -48,8 +51,7 @@ class Net(nn.Module):
         return x
 
 if __name__ == '__main__':
-    x = torch.rand(1, 2, 1024, 1024).cuda()
-    y = torch.rand(1, 1, 1024, 1024).cuda()
+    
     model = Net().cuda()
     print(model)
     print_model_params(model)
@@ -57,11 +59,18 @@ if __name__ == '__main__':
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr = 0.001, momentum=0.9)
     for epoch in range(2):        
+        print("test epoch", epoch)
+        gt = torch.rand(2, 1, 512, 512).cuda()
+        pred = torch.rand(2, 1, 512, 512).cuda()
         optimizer.zero_grad()
-        y_pred = model(x)
-        loss = criterion(y_pred, y)
+        for t in range(7):
+            print("test seq", t)
+            inputs = torch.rand(2, 2, 512, 512).cuda()
+            pred += model(inputs)
+        loss = criterion(pred, gt)
         loss.backward()
         optimizer.step()
+        model.init_hidden()
     print("Finish Training.")
     
 
