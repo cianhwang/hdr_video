@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from convolutional_rnn import Conv2dLSTM
+import model_utils
+import torch.optim as optim
+
 
 def conv3x3(in_planes, out_planes, stride=1, dilation=1):
 
@@ -88,10 +92,17 @@ class MergeNet(nn.Module):
         super(MergeNet, self).__init__()
 
         self.warp = warp
+        self.clstm = Conv2dLSTM(in_channels=8, out_channels=8,
+                                kernel_size=5, num_layers=1, bias=False)
+        self.bn0 = nn.BatchNorm2d(8)
+        self.relu = nn.ReLU(inplace=True)
+
         self.layer1 = BasicBlock(8, 16)
         self.layer2 = BasicBlock(16, 32)
         self.layer3 = BasicBlock(32, 32)
         self.layer4 = conv1x1(32, 4)
+        
+        self.hidden = None
         
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -99,11 +110,16 @@ class MergeNet(nn.Module):
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+                
+    def init_hidden(self):
+        self.hidden = None
 
     def forward(self, x):
 
         ref = x[:, :4]
         out = torch.cat([x[:, :4], self.warp(x[:, 4:8], x[:, 8:])], dim = 1)
+        out, self.hidden = self.clstm(out.view(1, *out.size()), self.hidden)
+        out = out[0]
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
@@ -114,7 +130,29 @@ class MergeNet(nn.Module):
 
 
 if __name__ == '__main__':
-    import model_utils
-    model = MergeNet()
+    model = MergeNet().cuda()
     print(model)
     model_utils.print_model_params(model)
+    
+    criterion = nn.MSELoss()
+    optimizer = optim.SGD(model.parameters(), lr = 0.001, momentum=0.9)
+    
+    for epoch in range(3):
+        print("test epoch", epoch)
+        gt = torch.rand(2, 4, 256, 256).cuda()
+        pred = torch.rand(2, 4, 256, 256).cuda()
+        optimizer.zero_grad()
+        for t in range(8):
+            print("test seq", t)
+            inputs = torch.rand(2, 10, 256, 256).cuda()
+            outputs = model(inputs)
+            pred += outputs.clone()
+        loss = criterion(pred, gt)
+        loss.backward()
+        optimizer.step()
+        model.init_hidden()
+    print("Finish Training.") 
+            
+
+            
+        
