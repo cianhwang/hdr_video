@@ -118,14 +118,14 @@ class MergeNet(nn.Module):
 
         ref = x[:, :4]
         out = torch.cat([x[:, :4], self.warp(x[:, 4:8], x[:, 8:])], dim = 1)
-        out, self.hidden = self.clstm(out.view(1, *out.size()), self.hidden)
-        out = out[0]
+#         out, self.hidden = self.clstm(out.view(1, *out.size()), self.hidden)
+#         out = out[0]
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = out + ref
-#         out = F.sigmoid(out)
+#         out = out + ref
+#         out = torch.sigmoid(out)
         return out
 
 

@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import MultiStepLR
 import model_utils
 from tqdm import tqdm
 import net
@@ -11,6 +12,7 @@ import os
 from evaluate import evaluate
 from tensorboardX import SummaryWriter
 import time
+import torchvision
 
 parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
@@ -30,9 +32,20 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
     
     with tqdm(total=len(dataloader)) as t:
         for i, (train_batch, labels_batch) in enumerate(dataloader):
+            n_seq = train_batch.size(1)
+            output_batch = train_batch[:, 0:1].clone()
             if params.cuda:
-                train_batch, labels_batch = train_batch.cuda(non_blocking=True), labels_batch.cuda(non_blocking=True)
-            output_batch = model(train_batch)
+                output_batch = output_batch.cuda(non_blocking=True)
+            for j in range(1, n_seq):
+                input_batch = torch.cat([train_batch[:, 0:1], train_batch[:, j:j+1]], dim = 1)
+                if params.cuda:
+                    input_batch, labels_batch = input_batch.cuda(non_blocking=True), labels_batch.cuda(non_blocking=True)
+                res = model(input_batch)
+#                 output_batch = res
+                output_batch += res.clone()
+#            ######
+#             output_batch = torch.sigmoid(output_batch)
+            output_batch = output_batch/float(n_seq)
             loss = loss_fn(output_batch, labels_batch)
 
             optimizer.zero_grad()
@@ -44,11 +57,20 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
 
             t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
             t.update()
+            
+            model.init_hidden()
 
         writer.add_scalar('Stats/loss', loss_avg(), epoch)
         for n, p in model.named_parameters():
             if(p.requires_grad) and ("bias" not in n) and ("bn" not in n):
                 writer.add_histogram('hist/'+n, p, epoch)
+        
+        ref_grid = torchvision.utils.make_grid(train_batch[:, :1])
+        writer.add_image('Train/ref', ref_grid, epoch)
+        out_grid = torchvision.utils.make_grid(output_batch)
+        writer.add_image('Train/out', out_grid, epoch)
+        gt_grid = torchvision.utils.make_grid(labels_batch)
+        writer.add_image('Train/gt', gt_grid, epoch)
     
 def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimizer, loss_fn, params, model_dir, restore_file=None):
 
@@ -58,12 +80,15 @@ def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimize
         model_utils.load_checkpoint(restore_path, model, optimizer)
 
     best_val_loss = 1e10
+    scheduler = MultiStepLR(optimizer, milestones=[2, 5], gamma=.99)
 
     for epoch in range(params.num_epochs):
 
         train(epoch, model, writer, optimizer, loss_fn, train_dataloader, params)
 
         val_loss = evaluate(epoch, model, writer, loss_fn, val_dataloader, params)
+        
+        scheduler.step()
 
         is_best = val_loss <= best_val_loss
 
@@ -101,6 +126,6 @@ if __name__=='__main__':
 
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate)
 
-    loss_fn = nn.L1Loss()
+    loss_fn = nn.MSELoss()
     
     train_and_evaluate(model, writer, train_dl, val_dl, optimizer, loss_fn, params, args.model_dir, args.restore_file)

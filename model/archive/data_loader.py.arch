@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
 import random
-import h5py
 
 def _get_image_size(img):
     if TF._is_pil_image(img):
@@ -95,7 +94,7 @@ class GroupComposed(object):
 #])
 train_transformer = GroupComposed([
     GroupToPILImage(mode = 'L'),
-    GroupRandomCrop(512),
+    GroupRandomCrop(1024),
     GroupRandomHorizontalFlip(),
     GroupRandomVerticalFlip(),
     GroupToTensor()
@@ -103,33 +102,29 @@ train_transformer = GroupComposed([
 
 eval_transformer =  GroupComposed([
     GroupToPILImage(mode = 'L'),
-    GroupRandomCrop(512),
+    GroupRandomCrop(1024),
     GroupToTensor()
 ])
 
-def raw_normalize(*raw_imgs): 
-    ## may include quantization error?
-    return [((img - img.min())*255.0/(img.max()-img.min())).astype(np.uint8) for img in raw_imgs]
+def raw_normalize(*raw_imgs):
+    return [((img - img.min())*255.0/(img.max()-img.min())).astype(np.uint8)[:, :, np.newaxis] for img in raw_imgs]
 
 class HDRDataset(Dataset):
 
     def __init__(self, transform = None, length = 1000):
         self.transform = transform
-        self.inputs = (np.load('data/inputs.npy')[:2]).transpose(1, 2, 0) # 8x2048x3584
-        self.gt = np.load('data/gt.npy')[np.newaxis].transpose(1, 2, 0)  # 1x2048x3584
-        #self.inputs = raw_normalize(*(np.split(self.inputs, self.inputs.shape[-1], axis=-1)), self.gt)
-        #self.inputs, self.gt = self.frames[:-1], self.frames[-1]  ## frames: list of N numpy array of size HxWx1
-                                                                    ## gt: numpy array of size HxWx1
+        self.ref = np.load('data/ref.npy')
+        self.alt = np.load('data/alt.npy')
+        self.gt = np.load('data/gt.npy')
+        self.ref, self.alt, self.gt = raw_normalize(self.ref, self.alt, self.gt)
         self.length = length
     def __len__(self):
         return self.length
 
     def __getitem__(self, idx):
         #if self.transform is not None:
-        frames = raw_normalize(*(np.split(self.inputs, self.inputs.shape[-1], axis=-1)), self.gt)
-        frames = self.transform(*frames) ## 8x512x512
-        img = torch.cat(frames[:-1], dim=0) ## 1x512x512
-        gt = frames[-1]
+        ref, alt, gt = self.transform(self.ref, self.alt, self.gt)
+        img = torch.cat([ref, alt], dim=0)
         return img, gt
 
 def fetch_dataloader(params = None, types = 'train'):
@@ -157,15 +152,13 @@ def imshow(img):
     plt.show()
 
 if __name__ == '__main__':
-
-    dl =  DataLoader(HDRDataset(train_transformer),
-                            batch_size = 1, shuffle = True,
-                            num_workers = int(8),
-                            pin_memory=True)
-    dataiter = iter(dl)
-    images, labels = dataiter.next() ## 1x8x512x512, 1x1x512x512
-    fig, ax = plt.subplots(2, 1, figsize=(20, 16))
-    ax[0].imshow(torchvision.utils.make_grid(images[0, :4].unsqueeze(1)).numpy()[0])
-    #ax[1].imshow(torchvision.utils.make_grid(images[:, 1:2]).numpy()[0])
-    ax[1].imshow(torchvision.utils.make_grid(labels).numpy()[0])
+    '''
+    out-dated...
+    '''
+    dataiter = iter(fetch_dataloader())
+    images, labels = dataiter.next()
+    fig, ax = plt.subplots(3, 1, figsize=(20, 16))
+    ax[0].imshow(torchvision.utils.make_grid(images[:, :1]).numpy()[0])
+    ax[1].imshow(torchvision.utils.make_grid(images[:, 1:]).numpy()[0])
+    ax[2].imshow(torchvision.utils.make_grid(labels).numpy()[0])
     plt.show()
