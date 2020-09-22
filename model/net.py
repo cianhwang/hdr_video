@@ -1,5 +1,5 @@
 from pwc import Network as PWC
-from merge import MergeNet
+from merge_simple import MergeNet
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

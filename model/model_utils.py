@@ -43,17 +43,22 @@ def save_checkpoint(state, is_best, checkpoint):
     torch.save(state, filepath)
     if is_best:
         shutil.copyfile(filepath, os.path.join(checkpoint, 'best.pth.tar'))
-
-def load_checkpoint(checkpoint, model, optimizer=None):
-    if not os.path.exists(checkpoint):
-        raise("File doesn't exist {}".format(checkpoint))
-    checkpoint = torch.load(checkpoint)
+        
+def load_checkpoint(ckpt, model, optimizer=None):
+    if not os.path.exists(ckpt):
+        raise("File doesn't exist {}".format(ckpt))
+    checkpoint = torch.load(ckpt)
     model.load_state_dict(checkpoint['state_dict'])
 
     if optimizer:
         optimizer.load_state_dict(checkpoint['optim_dict'])
+        
+    start_epoch = checkpoint['epoch']
+    best_val_loss = checkpoint['best_val_loss']
+   
+    print("[*] Loaded model from {}".format(ckpt))
 
-    return checkpoint
+    return model, optimizer, start_epoch, best_val_loss
 
 def print_stat_t(tensor_name, tensor):
     device = "GPU" if tensor.is_cuda else "CPU"

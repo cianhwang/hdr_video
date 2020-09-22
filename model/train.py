@@ -17,13 +17,16 @@ import torchvision
 parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
 #                    help="Directory containing the dataset")
+parser.add_argument('--ckpt_dir', type=str, 
+                    default='ckpt/'+time.strftime("%m%d_%H_%M"),
+                    help='Directory in which to save model checkpoints')
 parser.add_argument('--logs_dir', type=str,
                     default='runs/'+time.strftime("%m%d_%H_%M"),
                     help='Directory in which Tensorboard logs wil be stored')
 parser.add_argument('--model_dir', default='.',
                     help="Directory containing params.json")
 parser.add_argument('--restore_file', default=None,
-                    help="Optional, name of the file in --model_dir containing weights to reload before training")
+                    help="Optional, name of the file in --ckpt_dir containing weights to reload before training")
 
 def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
 
@@ -72,32 +75,34 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
         gt_grid = torchvision.utils.make_grid(labels_batch)
         writer.add_image('Train/gt', gt_grid, epoch)
     
-def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimizer, loss_fn, params, model_dir, restore_file=None):
+def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimizer, loss_fn, params, ckpt_dir, restore_file=None):
 
-    if restore_file is not None:
-        restore_path = os.path.join(
-            args.model_dir, args.restore_file + '.pth.tar')
-        model_utils.load_checkpoint(restore_path, model, optimizer)
-
+    start_epoch = 0
     best_val_loss = 1e10
-    scheduler = MultiStepLR(optimizer, milestones=[2, 5], gamma=.99)
+    
+    if restore_file is not None:
+        restore_path = os.path.join(args.ckpt_dir, args.restore_file + '.pth.tar')
+        model, optimizer, start_epoch, best_val_loss = model_utils.load_checkpoint(restore_path, model, optimizer)
 
-    for epoch in range(params.num_epochs):
+#     scheduler = MultiStepLR(optimizer, milestones=[2, 5], gamma=.99)
+
+    for epoch in range(start_epoch, params.num_epochs):
 
         train(epoch, model, writer, optimizer, loss_fn, train_dataloader, params)
 
         val_loss = evaluate(epoch, model, writer, loss_fn, val_dataloader, params)
         
-        scheduler.step()
+#         scheduler.step()
 
         is_best = val_loss <= best_val_loss
 
         model_utils.save_checkpoint({
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
-            'optim_dict': optimizer.state_dict()},
+            'optim_dict': optimizer.state_dict(),
+            'best_val_loss': best_val_loss},
                                     is_best = is_best,
-                                    checkpoint = model_dir
+                                    checkpoint = ckpt_dir
         )
         if is_best:
             best_val_loss = val_loss            
@@ -114,6 +119,7 @@ if __name__=='__main__':
     if params.cuda:
         torch.cuda.manual_seed(38)
 
+    print('[*] Saving tensorboard logs to {}'.format(args.logs_dir))
     if not os.path.exists(args.logs_dir):
         os.makedirs(args.logs_dir)
     writer = SummaryWriter(args.logs_dir)
@@ -126,6 +132,6 @@ if __name__=='__main__':
 
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate)
 
-    loss_fn = nn.MSELoss()
+    loss_fn = nn.L1Loss()
     
-    train_and_evaluate(model, writer, train_dl, val_dl, optimizer, loss_fn, params, args.model_dir, args.restore_file)
+    train_and_evaluate(model, writer, train_dl, val_dl, optimizer, loss_fn, params, args.ckpt_dir, args.restore_file)

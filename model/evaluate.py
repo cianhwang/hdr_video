@@ -10,13 +10,13 @@ import torch.nn as nn
 import torchvision
 
 
-parser = argparse.ArgumentParser()
-#parser.add_argument('--data_dir', default='data/64x64_SIGNS',
-#                    help="Directory containing the dataset")
-parser.add_argument('--model_dir', default='params.json',
-                    help="Directory containing params.json")
-parser.add_argument('--restore_file', default='best',
-                    help="Optional, name of the file in --model_dir containing weights to reload before training")
+# parser = argparse.ArgumentParser()
+# #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
+# #                    help="Directory containing the dataset")
+# parser.add_argument('--model_dir', default='params.json',
+#                     help="Directory containing params.json")
+# parser.add_argument('--restore_file', default='best',
+#                     help="Optional, name of the file in --model_dir containing weights to reload before training")
 
 def evaluate(epoch, model, writer, loss_fn, dataloader, params):
 

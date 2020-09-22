@@ -95,7 +95,7 @@ class GroupComposed(object):
 #])
 train_transformer = GroupComposed([
     GroupToPILImage(mode = 'L'),
-    GroupRandomCrop(512),
+    GroupRandomCrop(512), ## brake Bayer pattern!!
     GroupRandomHorizontalFlip(),
     GroupRandomVerticalFlip(),
     GroupToTensor()
@@ -103,7 +103,7 @@ train_transformer = GroupComposed([
 
 eval_transformer =  GroupComposed([
     GroupToPILImage(mode = 'L'),
-    GroupRandomCrop(512),
+    GroupRandomCrop(512), ## brake Bayer pattern!!
     GroupToTensor()
 ])
 
@@ -115,7 +115,7 @@ class HDRDataset(Dataset):
 
     def __init__(self, transform = None, length = 1000):
         self.transform = transform
-        self.inputs = (np.load('data/inputs.npy')[:2]).transpose(1, 2, 0) # 8x2048x3584
+        self.inputs = (np.load('data/inputs_2.npy')[:8]).transpose(1, 2, 0) # 8x2048x3584
         self.gt = np.load('data/gt.npy')[np.newaxis].transpose(1, 2, 0)  # 1x2048x3584
         #self.inputs = raw_normalize(*(np.split(self.inputs, self.inputs.shape[-1], axis=-1)), self.gt)
         #self.inputs, self.gt = self.frames[:-1], self.frames[-1]  ## frames: list of N numpy array of size HxWx1

@@ -38,9 +38,9 @@ def warp(x, flo):
     vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:].clone() / max(H-1,1)-1.0
     
     vgrid = vgrid.permute(0,2,3,1)        
-    output = nn.functional.grid_sample(x, vgrid)
+    output = nn.functional.grid_sample(x, vgrid, align_corners=True)
     mask = torch.autograd.Variable(torch.ones(x.size())).cuda()
-    mask = nn.functional.grid_sample(mask, vgrid)
+    mask = nn.functional.grid_sample(mask, vgrid, align_corners=True)
     
     mask[mask<0.9999] = 0
     mask[mask>0] = 1
@@ -100,7 +100,7 @@ class MergeNet(nn.Module):
         self.layer1 = BasicBlock(8, 16)
         self.layer2 = BasicBlock(16, 32)
         self.layer3 = BasicBlock(32, 32)
-        self.layer4 = conv1x1(32, 4)
+        self.layer4 = nn.Conv2d(32, 4, kernel_size=1, stride=1, bias=True)
         
         self.hidden = None
         
