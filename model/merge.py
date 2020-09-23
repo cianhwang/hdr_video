@@ -130,6 +130,7 @@ class MergeNet(nn.Module):
         self.layer1 = BasicBlock(8, 16)
         self.layer2 = BasicBlock(16, 32)
         self.layer3 = BasicBlock(32, 32)
+        
         self.layer4 = nn.Conv2d(32, 4, kernel_size=1, stride=1, bias=True)
         
         self.hidden1 = None
@@ -169,13 +170,102 @@ class MergeNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = out + ref
+#         out = out + ref
 #         out = torch.sigmoid(out)
+        return out
+
+class MergeNetM(nn.Module):
+
+    def __init__(self):
+        super(MergeNetM, self).__init__()
+
+        self.warp = warp
+        self.clstm = Conv2dLSTM(in_channels=8, out_channels=8,
+                                kernel_size=5, num_layers=1, bias=False)
+        self.bn0 = nn.BatchNorm2d(8)
+        self.relu = nn.ReLU(inplace=True)
+
+        self.layer1 = BasicBlock(8, 16)
+        self.layer2 = BasicBlock(16, 32)
+        self.layer3 = BasicBlock(32, 32)
+        self.layer4 = nn.Conv2d(32, 1, kernel_size=1, stride=1, bias=True)
+        
+        self.hidden = None
+        
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Sequential):
+                for mm in m.modules():
+                    if isinstance(mm, nn.Conv2d):
+                        nn.init.kaiming_normal_(mm.weight, mode='fan_out', nonlinearity='relu')
+                    elif isinstance(mm, (nn.BatchNorm2d, nn.GroupNorm)):
+                        nn.init.constant_(mm.weight, 1)
+                        nn.init.constant_(mm.bias, 0)
+                
+    def init_hidden(self):
+        self.hidden = None
+
+    def forward(self, x):
+
+        ref = x[:, :4]
+        alt_warp = self.warp(x[:, 4:8], x[:, 8:])
+        out = torch.cat([ref, alt_warp], dim = 1)
+        #         out, self.hidden = self.clstm(out.view(1, *out.size()), self.hidden)
+        #         out = out[0]
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        #         out = out + ref
+        out = torch.sigmoid(out).repeat(1, 4, 1, 1)
+        out = ref * out + alt_warp * (1-out)
+        return out
+
+class MergeNetS(nn.Module):
+
+    def __init__(self):
+        super(MergeNetS, self).__init__()
+
+        self.warp = warp
+        #self.clstm = Conv2dLSTM(in_channels=8, out_channels=8,
+                              #kernel_size=5, num_layers=1, bias=False)
+
+        self.conv1 = nn.Conv2d(8, 4, 15, padding = 7, bias=True)
+        self.relu1 = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(8, 4, 15, padding = 7, bias=True)
+        self.relu2 = nn.ReLU(inplace=True)
+        self.conv3 = nn.Conv2d(8, 1, 1, bias=True)
+        
+        self.load_state_dict(torch.load('SimpleMergeNet.pth'))
+        
+        self.hidden = None
+                
+    def init_hidden(self):
+        self.hidden = None
+
+    def forward(self, x):
+
+        ref = x[:, :4]
+        alt = self.warp(x[:, 4:8], x[:, 8:])
+        out = torch.cat([ref, alt], dim = 1)
+
+        out1 = self.relu1(self.conv1(out))
+        out2 = self.relu2(self.conv2(out))
+        out = torch.cat([out1, out2], dim = 1)
+        out = self.conv3(out)
+        out = torch.sigmoid(out)
+        out = out.repeat(1, 4, 1, 1)
+        out = out * ref + (1 - out) * alt
+        
         return out
 
 
 if __name__ == '__main__':
-    model = MergeNet().cuda()
+    model = MergeNetS().cuda()
     print(model)
     model_utils.print_model_params(model)
     
