@@ -23,9 +23,9 @@ parser.add_argument('--ckpt_dir', type=str,
 parser.add_argument('--logs_dir', type=str,
                     default='runs/'+time.strftime("%m%d_%H_%M"),
                     help='Directory in which Tensorboard logs wil be stored')
-parser.add_argument('--model_dir', default='.',
+parser.add_argument('--model_dir', type=str, default='.',
                     help="Directory containing params.json")
-parser.add_argument('--restore_file', default=None,
+parser.add_argument('--restore_file', type=str, default=None,
                     help="Optional, name of the file in --ckpt_dir containing weights to reload before training")
 
 def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):

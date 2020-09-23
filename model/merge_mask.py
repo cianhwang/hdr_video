@@ -110,6 +110,13 @@ class MergeNet(nn.Module):
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Sequential):
+                for mm in m.modules():
+                    if isinstance(mm, nn.Conv2d):
+                        nn.init.kaiming_normal_(mm.weight, mode='fan_out', nonlinearity='relu')
+                    elif isinstance(mm, (nn.BatchNorm2d, nn.GroupNorm)):
+                        nn.init.constant_(mm.weight, 1)
+                        nn.init.constant_(mm.bias, 0)
                 
     def init_hidden(self):
         self.hidden = None
