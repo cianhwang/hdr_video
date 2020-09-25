@@ -132,13 +132,69 @@ class HDRDataset(Dataset):
         gt = frames[-1]
         return img, gt
 
+## ----------------------begin Minghao llrawset---------------------
+class LlrawSet():
+    """
+    A barebone loading method to load low_light raw video dataset
+    Currently do NOT support slice indexing
+    parameter 'pos' only accept 'first'
+    """
+    def __init__(self,
+                 h5file = 'data/mh_lowlight_sep23/ll_dataset_sep23.hdf5',
+                 frame_per_sample = 8,
+                 transform = None,
+                 pos='first'):
+        self.fpath = h5file
+        self.N = frame_per_sample
+        #self.f = h5py.File(self.fpath, 'r')
+        self.pos = pos # Do not use other parameters
+        with h5py.File(self.fpath, 'r') as db:
+            self.frame_counts = np.array(db['frame_counts'])
+            self.noise_params = np.array(db['noise_params'])
+            
+        self.sample_cumsum = np.cumsum(self.frame_counts-self.N+1) #calculate vid&frame index from index
+        self.transform = transform
+        
+    def __len__(self):
+        return self.sample_cumsum[-1]
+    
+    def __getitem__(self, ind):
+        assert ind>=0 and ind<len(self), "Index out of bound"
+        vid_ind = np.searchsorted(self.sample_cumsum, ind, side = 'right')
+        ### modified by Qian #####
+        first_frame_ind = int(ind-self.N+1 - (int(self.sample_cumsum[vid_ind])-int(self.frame_counts[vid_ind])))
+        ### ---------------- #####
+
+        with h5py.File(self.fpath, 'r') as db:
+            llvid = np.array(db["llvid_{:03d}".format(vid_ind)][first_frame_ind:first_frame_ind+self.N]).transpose(1, 2, 0)   ## H x W x n_seq
+            #if llvid.shape[-1] == 7: ###### cause batch size inconsistency
+            #    llvid = np.concatenate((llvid, llvid[..., :1].copy()), axis = -1)
+            assert llvid.shape[-1] == self.N
+            if self.pos == 'first':
+                gt = np.array(db["gtvid_{:03d}".format(vid_ind)][first_frame_ind])[..., np.newaxis] ## H x W x 1
+            else:
+                raise RuntimeError("Position parameters other than 'pos' are not implemented")
+        noise_param = self.noise_params[vid_ind]
+
+
+        frames = raw_normalize(*(np.split(llvid, llvid.shape[-1],axis=-1)), gt)
+        frames = self.transform(*frames)
+        img = torch.cat(frames[:-1], dim=0)
+        gt = frames[-1]
+        return img, gt#, noise_param
+
+#    def __del__(self):
+#        self.f.close()
+
+## ----------------------end Minghao llrawset---------------------
+
 def fetch_dataloader(params = None, types = 'train'):
 
     dataloaders = {}
 
     for split in ['train', 'val','test']:
         if split == 'train':
-            dl = DataLoader(HDRDataset(train_transformer),
+            dl = DataLoader(LlrawSet(transform = train_transformer),
                             batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
@@ -158,10 +214,15 @@ def imshow(img):
 
 if __name__ == '__main__':
 
-    dl =  DataLoader(HDRDataset(train_transformer),
-                            batch_size = 1, shuffle = True,
-                            num_workers = int(8),
-                            pin_memory=True)
+#    dl =  DataLoader(HDRDataset(train_transformer),
+#                            batch_size = 1, shuffle = True,
+#                            num_workers = int(8),
+#                            pin_memory=True)
+    dl =  DataLoader(LlrawSet(transform = train_transformer),
+                     batch_size = 1, shuffle = True,
+                     num_workers = int(8),
+                     pin_memory=True)
+    
     dataiter = iter(dl)
     images, labels = dataiter.next() ## 1x8x512x512, 1x1x512x512
     fig, ax = plt.subplots(2, 1, figsize=(20, 16))

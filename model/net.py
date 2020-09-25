@@ -1,5 +1,5 @@
 from pwc import Network as PWC
-from merge_mask import MergeNet
+from merge import MergeNet, MergeNetM, MergeNetS
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,13 +8,20 @@ from model_utils import *
 import torch.optim as optim
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, merge_ver='p'):
         super(Net, self).__init__()
 
         self.pwc_net = PWC()
         for name, param in self.pwc_net.named_parameters():
             param.requires_grad = False
-        self.merge_net = MergeNet()
+        if merge_ver == 'p':
+            self.merge_net = MergeNet()
+        elif merge_ver == 'm':
+            self.merge_net = MergeNetM()
+        elif merge_ver == 's':
+            self.merge_net = MergeNetS()
+        else:
+            raise KeyError("MergeNet verion [{}] not found.".format(merge_ver))
 
     
     def raw_to_stack_tensor(self, raw_tensor):

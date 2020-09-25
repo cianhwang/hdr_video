@@ -17,6 +17,9 @@ import torchvision
 parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
 #                    help="Directory containing the dataset")
+parser.add_argument('--merge_ver', type=str, 
+                    default='p',
+                    help='Load assigned MergeNet version. Available types: [p]: MergeNet; [m]: MergeNetM; [s]: MergeNetS')
 parser.add_argument('--ckpt_dir', type=str, 
                     default='ckpt/'+time.strftime("%m%d_%H_%M"),
                     help='Directory in which to save model checkpoints')
@@ -58,7 +61,7 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
 
             loss_avg.update(loss.item())
 
-            t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
+            t.set_postfix(loss='{:.5f}'.format(loss_avg()))
             t.update()
             
             model.init_hidden()
@@ -74,6 +77,8 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
         writer.add_image('Train/out', out_grid, epoch)
         gt_grid = torchvision.utils.make_grid(labels_batch)
         writer.add_image('Train/gt', gt_grid, epoch)
+
+    return loss_avg()
     
 def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimizer, loss_fn, params, ckpt_dir, restore_file=None):
 
@@ -88,13 +93,22 @@ def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimize
 
     for epoch in range(start_epoch, params.num_epochs):
 
-        train(epoch, model, writer, optimizer, loss_fn, train_dataloader, params)
+        print('\nEpoch: {}/{}'.format(epoch+1, params.num_epochs))
+
+        train_loss = train(epoch, model, writer, optimizer, loss_fn, train_dataloader, params)
 
         val_loss = evaluate(epoch, model, writer, loss_fn, val_dataloader, params)
         
 #         scheduler.step()
 
         is_best = val_loss <= best_val_loss
+
+        msg1 = "train loss: {:.5f}"
+        msg2 = " - val loss: {:.5f}"
+        if is_best:
+            msg2 += " [*]"
+        msg = msg1 + msg2
+        print(msg.format(train_loss, val_loss))
 
         model_utils.save_checkpoint({
             'epoch': epoch + 1,
@@ -128,7 +142,7 @@ if __name__=='__main__':
     train_dl = dataloaders['train']
     val_dl = dataloaders['val']
 
-    model = net.Net().cuda() if params.cuda else net.Net()
+    model = net.Net(args.merge_ver).cuda() if params.cuda else net.Net(args.merge_ver)
 
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate)
 
