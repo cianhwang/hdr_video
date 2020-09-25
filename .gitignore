@@ -14,3 +14,4 @@ flow_test/lowlight3_bunny3_video
 *.tar
 model/runs/
 model/ckpt/
+model/data/*
