@@ -264,3 +264,8 @@ class Network(torch.nn.Module):
 	# end
 # end
 ##########################################################
+
+if __name__ == '__main__':
+    state_dict = { strKey.replace('module', 'net'): tenWeight for strKey, tenWeight in torch.load('pwc_weight.pth').items()}
+    for param_tensor in state_dict:
+        print(param_tensor, "\t", state_dict[param_tensor].size())

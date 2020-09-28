@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
 #                    help="Directory containing the dataset")
 parser.add_argument('--merge_ver', type=str, 
-                    default='p',
+                    default='m',
                     help='Load assigned MergeNet version. Available types: [p]: MergeNet; [m]: MergeNetM; [s]: MergeNetS')
 parser.add_argument('--ckpt_dir', type=str, 
                     default='ckpt/'+time.strftime("%m%d_%H_%M"),
@@ -30,6 +30,11 @@ parser.add_argument('--model_dir', type=str, default='.',
                     help="Directory containing params.json")
 parser.add_argument('--restore_file', type=str, default=None,
                     help="Optional, name of the file in --ckpt_dir containing weights to reload before training")
+
+## RAFT args
+parser.add_argument('--small', action='store_true', help='use small model')
+parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
+parser.add_argument('--alternate_corr', action='store_true', help='use efficent correlation implementation')
 
 def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
 
@@ -142,7 +147,7 @@ if __name__=='__main__':
     train_dl = dataloaders['train']
     val_dl = dataloaders['val']
 
-    model = net.Net(args.merge_ver).cuda() if params.cuda else net.Net(args.merge_ver)
+    model = net.Net(args).cuda() if params.cuda else net.Net(args)
 
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate)
 

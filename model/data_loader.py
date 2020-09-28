@@ -77,6 +77,30 @@ class GroupRandomCrop(object):
 
         i, j, h, w = self.get_params(images[0], self.size)
         return [TF.crop(img, i, j, h, w) for img in images]
+    
+class GroupRawRandomCrop(object):
+    def __init__(self, size):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+
+    @staticmethod
+    def get_params(img, output_size):
+
+        w, h = _get_image_size(img)
+        th, tw = output_size
+        if w == tw and h == th:
+            return 0, 0, h, w
+
+        i = random.randint(0, h - th) //2 * 2
+        j = random.randint(0, w - tw) //2 * 2
+        return i, j, th, tw
+
+    def __call__(self, *images):
+
+        i, j, h, w = self.get_params(images[0], self.size)
+        return [TF.crop(img, i, j, h, w) for img in images]
         
 class GroupComposed(object):
     
@@ -95,7 +119,7 @@ class GroupComposed(object):
 #])
 train_transformer = GroupComposed([
     GroupToPILImage(mode = 'L'),
-    GroupRandomCrop(512), ## brake Bayer pattern!!
+    GroupRawRandomCrop(512),
     GroupRandomHorizontalFlip(),
     GroupRandomVerticalFlip(),
     GroupToTensor()
@@ -103,7 +127,7 @@ train_transformer = GroupComposed([
 
 eval_transformer =  GroupComposed([
     GroupToPILImage(mode = 'L'),
-    GroupRandomCrop(512), ## brake Bayer pattern!!
+    GroupRawRandomCrop(512),
     GroupToTensor()
 ])
 
@@ -194,10 +218,14 @@ def fetch_dataloader(params = None, types = 'train'):
 
     for split in ['train', 'val','test']:
         if split == 'train':
-            dl = DataLoader(LlrawSet(transform = train_transformer),
-                            batch_size = params.batch_size, shuffle = True,
+            dl = DataLoader(HDRDataset(train_transformer),
+                            batch_size = params.val_batch_size, shuffle = False,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
+#             dl = DataLoader(LlrawSet(transform = train_transformer),
+#                             batch_size = params.batch_size, shuffle = True,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
         else:
             dl = DataLoader(HDRDataset(eval_transformer, 100),
                             batch_size = params.val_batch_size, shuffle = False,

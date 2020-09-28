@@ -6,22 +6,27 @@ import torch.nn.functional as F
 import sys
 from model_utils import *
 import torch.optim as optim
+sys.path.append('raft_core')
+from raft import RAFT
 
 class Net(nn.Module):
-    def __init__(self, merge_ver='p'):
+    def __init__(self, args):
         super(Net, self).__init__()
 
-        self.pwc_net = PWC()
-        for name, param in self.pwc_net.named_parameters():
+#         self.pwc_net = PWC()
+        self.raft = RAFT(args)
+        for name, param in self.raft.named_parameters():
             param.requires_grad = False
-        if merge_ver == 'p':
+            
+        self.merge_ver = args.merge_ver
+        if self.merge_ver == 'p':
             self.merge_net = MergeNet()
-        elif merge_ver == 'm':
+        elif self.merge_ver == 'm':
             self.merge_net = MergeNetM()
-        elif merge_ver == 's':
+        elif self.merge_ver == 's':
             self.merge_net = MergeNetS()
         else:
-            raise KeyError("MergeNet verion [{}] not found.".format(merge_ver))
+            raise KeyError("MergeNet verion [{}] not found.".format(self.merge_ver))
 
     
     def raw_to_stack_tensor(self, raw_tensor):
@@ -44,8 +49,8 @@ class Net(nn.Module):
         gray_img1, gray_img2 = (F.avg_pool2d(x[:, :1], 2), F.avg_pool2d(x[:, 1:], 2))
         #gray_img1 = F.interpolate(gray_img1, (448, 1024), mode='bilinear')/20.0
         #gray_img2 = F.interpolate(gray_img2, (448, 1024), mode='bilinear')/20.0
-        flow = self.pwc_net(gray_img1.repeat(1, 3, 1, 1), gray_img2.repeat(1, 3, 1, 1))
-        flow = 20.0 * F.interpolate(flow, (H//2, W//2), mode='nearest')
+        _, flow = self.raft(gray_img1.repeat(1, 3, 1, 1), gray_img2.repeat(1, 3, 1, 1))
+        #flow = 20.0 * F.interpolate(flow, (H//2, W//2), mode='nearest')
         #flow[:, 0] *= float(H//2) / float(448)
         #flow[:, 1] *= float(W//2) / float(1024)
 
