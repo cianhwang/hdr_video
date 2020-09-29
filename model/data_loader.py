@@ -163,52 +163,53 @@ class LlrawSet():
     Currently do NOT support slice indexing
     parameter 'pos' only accept 'first'
     """
-    def __init__(self,
+    def __init__(self, n_samples = 1000,
                  h5file = 'data/mh_lowlight_sep23/ll_dataset_sep23.hdf5',
                  frame_per_sample = 8,
                  transform = None,
                  pos='first'):
         self.fpath = h5file
         self.N = frame_per_sample
-        #self.f = h5py.File(self.fpath, 'r')
-        self.pos = pos # Do not use other parameters
+        self.pos = pos
+        if self.pos == 'first':
+            self.ref_offset = 0
+        elif self.pos == 'mid':
+            self.ref_offset = (self.N-1)//2
+        elif self.pos == 'last':
+            self.ref_offset = self.N-1
+        else:
+            raise RuntimeError("'{}' is not a valid position parameter. Choose from first/mid/last")
         with h5py.File(self.fpath, 'r') as db:
             self.frame_counts = np.array(db['frame_counts'])
             self.noise_params = np.array(db['noise_params'])
             
         self.sample_cumsum = np.cumsum(self.frame_counts-self.N+1) #calculate vid&frame index from index
         self.transform = transform
+        assert n_samples<=self.sample_cumsum[-1], \
+            "Requesting {} samples, but the dataset contains only {} samples".format(n_samples, self.sample_cumsum[-1])
+        self.n_samples = n_samples
         
     def __len__(self):
-        return self.sample_cumsum[-1]
+        return self.n_samples #self.sample_cumsum[-1]
     
     def __getitem__(self, ind):
         assert ind>=0 and ind<len(self), "Index out of bound"
         vid_ind = np.searchsorted(self.sample_cumsum, ind, side = 'right')
-        ### modified by Qian #####
         first_frame_ind = int(ind-self.N+1 - (int(self.sample_cumsum[vid_ind])-int(self.frame_counts[vid_ind])))
-        ### ---------------- #####
 
         with h5py.File(self.fpath, 'r') as db:
-            llvid = np.array(db["llvid_{:03d}".format(vid_ind)][first_frame_ind:first_frame_ind+self.N]).transpose(1, 2, 0)   ## H x W x n_seq
-            #if llvid.shape[-1] == 7: ###### cause batch size inconsistency
-            #    llvid = np.concatenate((llvid, llvid[..., :1].copy()), axis = -1)
-            assert llvid.shape[-1] == self.N
-            if self.pos == 'first':
-                gt = np.array(db["gtvid_{:03d}".format(vid_ind)][first_frame_ind])[..., np.newaxis] ## H x W x 1
-            else:
-                raise RuntimeError("Position parameters other than 'pos' are not implemented")
+            llvid = np.array(db["llvid_{:03d}".format(vid_ind)][first_frame_ind:first_frame_ind+self.N])   ## n_seq x H x W
+            llvid = np.concatenate([llvid[self.ref_offset:self.ref_offset+1], np.delete(llvid, self.ref_offset, 0)], 0) # ref frame to first
+            llvid = llvid.transpose(1, 2, 0) # H x W x n_seq
+            assert llvid.shape[-1] == self.N 
+            gt = np.array(db["gtvid_{:03d}".format(vid_ind)][first_frame_ind+self.ref_offset])[..., np.newaxis] ## H x W x 1
         noise_param = self.noise_params[vid_ind]
-
-
+        
         frames = raw_normalize(*(np.split(llvid, llvid.shape[-1],axis=-1)), gt)
         frames = self.transform(*frames)
         img = torch.cat(frames[:-1], dim=0)
         gt = frames[-1]
         return img, gt#, noise_param
-
-#    def __del__(self):
-#        self.f.close()
 
 ## ----------------------end Minghao llrawset---------------------
 
@@ -218,17 +219,21 @@ def fetch_dataloader(params = None, types = 'train'):
 
     for split in ['train', 'val','test']:
         if split == 'train':
-            dl = DataLoader(HDRDataset(train_transformer),
-                            batch_size = params.val_batch_size, shuffle = False,
-                            num_workers = int(params.num_workers),
-                            pin_memory=params.cuda)
-#             dl = DataLoader(LlrawSet(transform = train_transformer),
-#                             batch_size = params.batch_size, shuffle = True,
+#             dl = DataLoader(HDRDataset(train_transformer),
+#                             batch_size = params.val_batch_size, shuffle = False,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
+            dl = DataLoader(LlrawSet(transform = train_transformer, n_samples = 500),
+                            batch_size = params.batch_size, shuffle = True,
+                            num_workers = int(params.num_workers),
+                            pin_memory=params.cuda)
         else:
-            dl = DataLoader(HDRDataset(eval_transformer, 100),
-                            batch_size = params.val_batch_size, shuffle = False,
+#             dl = DataLoader(HDRDataset(eval_transformer, 100),
+#                             batch_size = params.val_batch_size, shuffle = False,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
+            dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
+                            batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
         dataloaders[split] = dl

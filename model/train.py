@@ -13,6 +13,7 @@ from evaluate import evaluate
 from tensorboardX import SummaryWriter
 import time
 import torchvision
+import json
 
 parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
@@ -77,11 +78,11 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
                 writer.add_histogram('hist/'+n, p, epoch)
         
         ref_grid = torchvision.utils.make_grid(train_batch[:, :1])
-        writer.add_image('Train/ref', ref_grid, epoch)
+        writer.add_image('Train/ref', ref_grid, epoch + 1)
         out_grid = torchvision.utils.make_grid(output_batch)
-        writer.add_image('Train/out', out_grid, epoch)
+        writer.add_image('Train/out', out_grid, epoch + 1)
         gt_grid = torchvision.utils.make_grid(labels_batch)
-        writer.add_image('Train/gt', gt_grid, epoch)
+        writer.add_image('Train/gt', gt_grid, epoch + 1)
 
     return loss_avg()
     
@@ -129,6 +130,8 @@ def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimize
 if __name__=='__main__':
 
     args = parser.parse_args()
+    with open('args.json', 'w') as f:
+        json.dump(args.__dict__, f, indent=2)
     json_path = os.path.join(args.model_dir, 'params.json')
     assert os.path.isfile(
         json_path), "No json configuration file found at {}".format(json_path)

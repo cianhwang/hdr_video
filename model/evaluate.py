@@ -45,11 +45,11 @@ def evaluate(epoch, model, writer, loss_fn, dataloader, params):
     writer.add_scalar('Stats/val_loss', loss_avg(), epoch)
 
     ref_grid = torchvision.utils.make_grid(val_batch[:, :1])
-    writer.add_image('Val/ref', ref_grid, epoch)
+    writer.add_image('Val/ref', ref_grid, epoch + 1)
     out_grid = torchvision.utils.make_grid(output_batch)
-    writer.add_image('Val/out', out_grid, epoch)
+    writer.add_image('Val/out', out_grid, epoch + 1)
     gt_grid = torchvision.utils.make_grid(labels_batch)
-    writer.add_image('Val/gt', gt_grid, epoch)
+    writer.add_image('Val/gt', gt_grid, epoch + 1)
 #     display_grid = torchvision.utils.make_grid(torch.cat([val_batch[:, :1], output_batch, labels_batch]))
 #     writer.add_image('Visual/ref-out-gt', display_grid, epoch)
     
