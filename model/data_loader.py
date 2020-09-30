@@ -135,6 +135,10 @@ def raw_normalize(*raw_imgs):
     ## may include quantization error?
     return [((img - img.min())*255.0/(img.max()-img.min())).astype(np.uint8) for img in raw_imgs]
 
+def paired_normalize(inputs, gt, percentage = 99.9):
+    thres = np.percentile(gt, percentage)
+    return torch.clamp(inputs, 0., thres)/thres, torch.clamp(gt, 0., thres)/thres
+
 class HDRDataset(Dataset):
 
     def __init__(self, transform = None, length = 1000):
@@ -157,17 +161,16 @@ class HDRDataset(Dataset):
         return img, gt
 
 ## ----------------------begin Minghao llrawset---------------------
-class LlrawSet():
+class LlrawSet(Dataset):
     """
     A barebone loading method to load low_light raw video dataset
     Currently do NOT support slice indexing
-    parameter 'pos' only accept 'first'
     """
-    def __init__(self, n_samples = 1000,
+    def __init__(self, n_samples = None,
                  h5file = 'data/mh_lowlight_sep23/ll_dataset_sep23.hdf5',
                  frame_per_sample = 8,
                  transform = None,
-                 pos='first'):
+                 pos='mid'):
         self.fpath = h5file
         self.N = frame_per_sample
         self.pos = pos
@@ -185,9 +188,12 @@ class LlrawSet():
             
         self.sample_cumsum = np.cumsum(self.frame_counts-self.N+1) #calculate vid&frame index from index
         self.transform = transform
-        assert n_samples<=self.sample_cumsum[-1], \
-            "Requesting {} samples, but the dataset contains only {} samples".format(n_samples, self.sample_cumsum[-1])
-        self.n_samples = n_samples
+        if n_samples is None:
+            self.n_samples = self.sample_cumsum[-1]
+        else:
+            self.n_samples = n_samples
+            assert n_samples<=self.sample_cumsum[-1], \
+                "Requesting {} samples, but the dataset contains only {} samples".format(n_samples, self.sample_cumsum[-1])
         
     def __len__(self):
         return self.n_samples #self.sample_cumsum[-1]
@@ -209,6 +215,7 @@ class LlrawSet():
         frames = self.transform(*frames)
         img = torch.cat(frames[:-1], dim=0)
         gt = frames[-1]
+        img, gt = paired_normalize(img, gt)
         return img, gt#, noise_param
 
 ## ----------------------end Minghao llrawset---------------------
@@ -223,19 +230,23 @@ def fetch_dataloader(params = None, types = 'train'):
 #                             batch_size = params.val_batch_size, shuffle = False,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
-            dl = DataLoader(LlrawSet(transform = train_transformer, n_samples = 500),
+            train_set = LlrawSet(transform = train_transformer)
+            sublist = list(range(0, len(train_set), 5))
+            train_subset = torch.utils.data.Subset(train_set, sublist)
+        
+            dl = DataLoader(train_subset,
                             batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
         else:
-#             dl = DataLoader(HDRDataset(eval_transformer, 100),
-#                             batch_size = params.val_batch_size, shuffle = False,
-#                             num_workers = int(params.num_workers),
-#                             pin_memory=params.cuda)
-            dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
-                            batch_size = params.batch_size, shuffle = True,
+            dl = DataLoader(HDRDataset(eval_transformer, 50),
+                            batch_size = params.val_batch_size, shuffle = False,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
+#             dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
+#                             batch_size = params.batch_size, shuffle = True,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
         dataloaders[split] = dl
 
     return dataloaders
