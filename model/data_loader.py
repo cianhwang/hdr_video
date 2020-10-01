@@ -244,7 +244,7 @@ def fetch_dataloader(params = None, types = 'train'):
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
 #             dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
-#                             batch_size = params.batch_size, shuffle = True,
+#                             batch_size = params.val_batch_size, shuffle = False,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
         dataloaders[split] = dl

@@ -72,12 +72,12 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
             
             model.init_hidden()
 
-        writer.add_scalar('Stats/loss', loss_avg(), epoch)
+        writer.add_scalar('Stats/loss', loss_avg(), epoch +1)
         for n, p in model.named_parameters():
             if(p.requires_grad) and ("bias" not in n) and ("bn" not in n):
-                writer.add_histogram('hist/'+n, p, epoch)
+                writer.add_histogram('hist/'+n, p, epoch +1)
         
-        ref_grid = torchvision.utils.make_grid(train_batch[:, :1])
+        ref_grid = torchvision.utils.make_grid(train_batch[:4, :1])
         writer.add_image('Train/ref', ref_grid, epoch + 1)
         out_grid = torchvision.utils.make_grid(output_batch)
         writer.add_image('Train/out', out_grid, epoch + 1)
