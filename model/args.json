@@ -1,9 +1,9 @@
 {
   "merge_ver": "m",
-  "ckpt_dir": "ckpt/0930_17_23",
-  "logs_dir": "runs/0930_17_23",
+  "ckpt_dir": "ckpt/0930_17_23/",
+  "logs_dir": "runs/0930_17_23/",
   "model_dir": ".",
-  "restore_file": null,
+  "restore_file": "last",
   "small": false,
   "mixed_precision": false,
   "alternate_corr": false

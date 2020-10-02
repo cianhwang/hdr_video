@@ -79,9 +79,9 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
         
         ref_grid = torchvision.utils.make_grid(train_batch[:4, :1])
         writer.add_image('Train/ref', ref_grid, epoch + 1)
-        out_grid = torchvision.utils.make_grid(output_batch)
+        out_grid = torchvision.utils.make_grid(output_batch[:4])
         writer.add_image('Train/out', out_grid, epoch + 1)
-        gt_grid = torchvision.utils.make_grid(labels_batch)
+        gt_grid = torchvision.utils.make_grid(labels_batch[:4])
         writer.add_image('Train/gt', gt_grid, epoch + 1)
 
     return loss_avg()

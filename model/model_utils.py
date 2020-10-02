@@ -50,7 +50,7 @@ def load_checkpoint(ckpt, model, optimizer=None):
     checkpoint = torch.load(ckpt)
     model.load_state_dict(checkpoint['state_dict'])
 
-    if optimizer:
+    if optimizer is not None:
         optimizer.load_state_dict(checkpoint['optim_dict'])
         
     start_epoch = checkpoint['epoch']
