@@ -1,5 +1,5 @@
 from pwc import Network as PWC
-from merge import MergeNet, MergeNetM, MergeNetS
+from merge import MergeNet, MergeNetM, MergeNetS, MergeNetMP
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,6 +23,8 @@ class Net(nn.Module):
             self.merge_net = MergeNet()
         elif self.merge_ver == 'm':
             self.merge_net = MergeNetM()
+        elif self.merge_ver == 'mp':
+            self.merge_net = MergeNetMP()
         elif self.merge_ver == 's':
             self.merge_net = MergeNetS()
         else:

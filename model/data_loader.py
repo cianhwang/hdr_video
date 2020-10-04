@@ -215,7 +215,7 @@ class LlrawSet(Dataset):
         frames = self.transform(*frames)
         img = torch.cat(frames[:-1], dim=0)
         gt = frames[-1]
-        img, gt = paired_normalize(img, gt)
+#         img, gt = paired_normalize(img, gt)
         return img, gt#, noise_param
 
 ## ----------------------end Minghao llrawset---------------------
@@ -239,14 +239,14 @@ def fetch_dataloader(params = None, types = 'train'):
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
         else:
-            dl = DataLoader(HDRDataset(eval_transformer, 50),
-                            batch_size = params.val_batch_size, shuffle = False,
-                            num_workers = int(params.num_workers),
-                            pin_memory=params.cuda)
-#             dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
+#             dl = DataLoader(HDRDataset(eval_transformer, 50),
 #                             batch_size = params.val_batch_size, shuffle = False,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
+            dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
+                            batch_size = params.val_batch_size, shuffle = False,
+                            num_workers = int(params.num_workers),
+                            pin_memory=params.cuda)
         dataloaders[split] = dl
 
     return dataloaders

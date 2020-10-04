@@ -18,9 +18,10 @@ import json
 parser = argparse.ArgumentParser()
 #parser.add_argument('--data_dir', default='data/64x64_SIGNS',
 #                    help="Directory containing the dataset")
+parser.add_argument('--note', type=str, default=None, help='note wrote to logs')
 parser.add_argument('--merge_ver', type=str, 
                     default='m',
-                    help='Load assigned MergeNet version. Available types: [p]: MergeNet; [m]: MergeNetM; [s]: MergeNetS')
+                    help='Load assigned MergeNet version. Available types: [p]: MergeNet; [m]: MergeNetM; [mp]: MergeNetMP; [s]: MergeNetS')
 parser.add_argument('--ckpt_dir', type=str, 
                     default='ckpt/'+time.strftime("%m%d_%H_%M"),
                     help='Directory in which to save model checkpoints')
@@ -145,6 +146,11 @@ if __name__=='__main__':
     if not os.path.exists(args.logs_dir):
         os.makedirs(args.logs_dir)
     writer = SummaryWriter(args.logs_dir)
+    logs_path = os.path.join(args.logs_dir, 'logs.json')
+    with open(logs_path, 'w') as f:
+        json.dump(args.__dict__, f, indent=4)
+        json.dump(params.__dict__, f, indent=4)
+    
         
     dataloaders = data_loader.fetch_dataloader(params)
     train_dl = dataloaders['train']

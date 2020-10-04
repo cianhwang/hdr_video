@@ -117,7 +117,7 @@ class LstmBlock(nn.Module):
         
         return out, h1, h2
     
-
+## ---------------------- begin Net[P] ---------------------
 class MergeNet(nn.Module):
 
     def __init__(self):
@@ -170,10 +170,14 @@ class MergeNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-#         out = out + ref
+        out = out + alt_warp
 #         out = torch.sigmoid(out)
         return out
 
+## ---------------------- end Net[P] ---------------------
+
+
+## ---------------------- begin Net[M] ---------------------
 class MergeNetM(nn.Module):
 
     def __init__(self):
@@ -224,6 +228,57 @@ class MergeNetM(nn.Module):
         out = torch.sigmoid(out).repeat(1, 4, 1, 1)
         out = ref * out + alt_warp * (1-out)
         return out
+## ---------------------- end Net[M] ---------------------
+
+## ---------------------- begin Net[MP] ---------------------
+class MergeNetMP(nn.Module):
+
+    def __init__(self):
+        super(MergeNetMP, self).__init__()
+
+        self.warp = warp
+
+        self.layer1 = BasicBlock(8, 16)
+        self.layer2 = BasicBlock(16, 32)
+        self.layer3 = BasicBlock(32, 32)
+        self.layer4 = nn.Conv2d(32, 2, kernel_size=1, stride=1, bias=True)
+        
+        self.hidden = None
+        
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Sequential):
+                for mm in m.modules():
+                    if isinstance(mm, nn.Conv2d):
+                        nn.init.kaiming_normal_(mm.weight, mode='fan_out', nonlinearity='relu')
+                    elif isinstance(mm, (nn.BatchNorm2d, nn.GroupNorm)):
+                        nn.init.constant_(mm.weight, 1)
+                        nn.init.constant_(mm.bias, 0)
+                
+    def init_hidden(self):
+        self.hidden = None
+
+    def forward(self, x):
+
+        ref = x[:, :4]
+        alt_warp = self.warp(x[:, 4:8], x[:, 8:])
+        out = torch.cat([ref, alt_warp], dim = 1)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.softmax(out, dim = 1)
+        out = ref * out[:, :1].repeat(1, 4, 1, 1) + alt_warp * out[:, 1:].repeat(1, 4, 1, 1)
+        return out
+## ---------------------- end Net[MP] ---------------------
+
+
+
+## ---------------------- begin Net[S] ---------------------
 
 class MergeNetS(nn.Module):
 
@@ -262,6 +317,8 @@ class MergeNetS(nn.Module):
         out = out * ref + (1 - out) * alt
         
         return out
+
+## ---------------------- end Net[S] ---------------------
 
 
 if __name__ == '__main__':
