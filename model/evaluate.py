@@ -46,7 +46,7 @@ def evaluate(epoch, model, writer, loss_fn, dataloader, params):
 
     ref_grid = torchvision.utils.make_grid(val_batch[:4, :1])
     writer.add_image('Val/ref', ref_grid, epoch + 1)
-    out_grid = torchvision.utils.make_grid(output_batch[:4])
+    out_grid = torchvision.utils.make_grid(torch.clamp(output_batch[:4], min=0.0, max =1.0))
     writer.add_image('Val/out', out_grid, epoch + 1)
     gt_grid = torchvision.utils.make_grid(labels_batch[:4])
     writer.add_image('Val/gt', gt_grid, epoch + 1)
