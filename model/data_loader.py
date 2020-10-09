@@ -227,7 +227,7 @@ def fetch_dataloader(params = None, types = 'train'):
     for split in ['train', 'val','test']:
         if split == 'train':
 #             dl = DataLoader(HDRDataset(train_transformer),
-#                             batch_size = params.val_batch_size, shuffle = False,
+#                             batch_size = params.batch_size, shuffle = True,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
             train_set = LlrawSet(transform = train_transformer)
