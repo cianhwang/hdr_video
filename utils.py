@@ -107,4 +107,29 @@ def stack_to_raw(rggb_stack):
 def print_model_params(model):
     print("#total params:", sum(p.numel() for p in model.parameters()), end='')
     print(" | #trainable params:", sum(p.numel() for p in model.parameters() if p.requires_grad))
+    
+def add_window(img, left_x, right_x, color = 'r', win_size = 256):
+    assert img.dtype == np.uint8
+    img_w_win = img.copy().astype(np.int16)
+    patch = np.zeros((win_size, win_size, 3), dtype = np.int16)
+    if color == 'r':
+        patch[..., 0] = 255
+    elif color == 'g':
+        patch[..., 1] = 255
+    elif color == 'b':
+        patch[..., 2] = 255
+    elif color == 'y':
+        patch[..., [0, 1]] = 255
+    elif color == 'p':
+        patch[..., [0, 2]] = 255
+    elif color == 'c':
+        patch[..., [1, 2]] = 255
+    else:
+        raise NotImplementedError('unrecognized color type')
+    patch[10:-10, 10:-10, :] = 0
+    print(patch.shape)
+    
+    img_w_win[left_x:left_x+win_size, right_x:right_x+win_size] += patch
+    img_w_win = np.clip(img_w_win, 0, 255)
+    return img_w_win.astype(np.uint8)
 
