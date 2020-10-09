@@ -127,7 +127,6 @@ def add_window(img, left_x, right_x, color = 'r', win_size = 256):
     else:
         raise NotImplementedError('unrecognized color type')
     patch[10:-10, 10:-10, :] = 0
-    print(patch.shape)
     
     img_w_win[left_x:left_x+win_size, right_x:right_x+win_size] += patch
     img_w_win = np.clip(img_w_win, 0, 255)
