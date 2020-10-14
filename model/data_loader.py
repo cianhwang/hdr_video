@@ -118,7 +118,7 @@ class GroupComposed(object):
 #    transforms.ToTensor() #[0, 255] -> [0, 1]
 #])
 train_transformer = GroupComposed([
-    GroupToPILImage(mode = 'L'),
+    GroupToPILImage(mode = 'F'),
     GroupRawRandomCrop(512),
     GroupRandomHorizontalFlip(),
     GroupRandomVerticalFlip(),
@@ -126,14 +126,14 @@ train_transformer = GroupComposed([
 ])
 
 eval_transformer =  GroupComposed([
-    GroupToPILImage(mode = 'L'),
+    GroupToPILImage(mode = 'F'),
     GroupRawRandomCrop(512),
     GroupToTensor()
 ])
 
 def raw_normalize(*raw_imgs): 
     ## may include quantization error?
-    return [((img - img.min())*255.0/(img.max()-img.min())).astype(np.uint8) for img in raw_imgs]
+    return [((img - img.min())/(img.max()-img.min())).astype(np.float32) for img in raw_imgs]
 
 def paired_normalize(inputs, gt, percentage = 99.9):
     thres = np.percentile(gt, percentage)
@@ -143,8 +143,8 @@ class HDRDataset(Dataset):
 
     def __init__(self, transform = None, length = 1000):
         self.transform = transform
-        self.inputs = (np.load('data/inputs_2.npy')[:8]).transpose(1, 2, 0) # 8x2048x3584
-        self.gt = np.load('data/gt.npy')[np.newaxis].transpose(1, 2, 0)  # 1x2048x3584
+        self.inputs = np.load('data/inputs_1014.npy').transpose(1, 2, 0) # 8x2174x3864
+        self.gt = np.load('data/gt_1014.npy')[np.newaxis].transpose(1, 2, 0)  # 1x2174x3864
         #self.inputs = raw_normalize(*(np.split(self.inputs, self.inputs.shape[-1], axis=-1)), self.gt)
         #self.inputs, self.gt = self.frames[:-1], self.frames[-1]  ## frames: list of N numpy array of size HxWx1
                                                                     ## gt: numpy array of size HxWx1
