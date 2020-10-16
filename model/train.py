@@ -78,11 +78,11 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
             if(p.requires_grad) and ("bias" not in n) and ("bn" not in n):
                 writer.add_histogram('hist/'+n, p, epoch +1)
         
-        ref_grid = torchvision.utils.make_grid(train_batch[:4, :1])
+        ref_grid = torchvision.utils.make_grid(train_batch[:4, :1].pow(1/2.2))
         writer.add_image('Train/ref', ref_grid, epoch + 1)
-        out_grid = torchvision.utils.make_grid(torch.clamp(output_batch[:4], min=0.0, max =1.0))
+        out_grid = torchvision.utils.make_grid(torch.clamp(output_batch[:4], min=0.0, max =1.0).pow(1/2.2))
         writer.add_image('Train/out', out_grid, epoch + 1)
-        gt_grid = torchvision.utils.make_grid(labels_batch[:4])
+        gt_grid = torchvision.utils.make_grid(labels_batch[:4].pow(1/2.2))
         writer.add_image('Train/gt', gt_grid, epoch + 1)
 
     return loss_avg()
