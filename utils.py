@@ -64,6 +64,7 @@ def plot_histogram(Im, bit_length = 8):
     histb,bins=np.histogram(blue,np.arange(0,max_value))
     
     plt.plot(np.arange(0, max_value-1),histr,'r', np.arange(0,max_value-1),histg,'g', np.arange(0,max_value-1),histb, 'b')
+    plt.show()
     
 def plot_histogram_normalized(Im, max_range = 1.):
     if len(Im.shape) == 3: # rgb image
@@ -83,6 +84,7 @@ def plot_histogram_normalized(Im, max_range = 1.):
     plt.plot(np.linspace(0, max_range, 49, endpoint=False), histr,'r', 
              np.linspace(0, max_range, 49, endpoint=False), histg,'g', 
              np.linspace(0, max_range, 49, endpoint=False), histb, 'b')
+    plt.show()
     
 def raw_to_stack(raw_img, pattern='rggb'):
     """Reshape the raw image into depth 4 stack, following order rggb, depth on last channel"""
