@@ -184,16 +184,11 @@ class MergeNetM(nn.Module):
         super(MergeNetM, self).__init__()
 
         self.warp = warp
-        self.clstm = Conv2dLSTM(in_channels=8, out_channels=8,
-                                kernel_size=5, num_layers=1, bias=False)
-        self.bn0 = nn.BatchNorm2d(8)
-        self.relu = nn.ReLU(inplace=True)
 
         self.layer1 = BasicBlock(8, 16)
         self.layer2 = BasicBlock(16, 32)
         self.layer3 = BasicBlock(32, 32)
-        self.layer4 = nn.Conv2d(32, 1, kernel_size=1, stride=1, bias=True)
-        
+        self.layer4 = nn.Conv2d(32, 2, kernel_size=3, stride=1, padding=1,bias=True)
         self.hidden = None
         
         for m in self.modules():
@@ -218,15 +213,12 @@ class MergeNetM(nn.Module):
         ref = x[:, :4]
         alt_warp = self.warp(x[:, 4:8], x[:, 8:])
         out = torch.cat([ref, alt_warp], dim = 1)
-        #         out, self.hidden = self.clstm(out.view(1, *out.size()), self.hidden)
-        #         out = out[0]
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        #         out = out + ref
-        out = torch.sigmoid(out).repeat(1, 4, 1, 1)
-        out = ref * out + alt_warp * (1-out)
+        out = F.softmax(out, dim = 1)
+        out = ref * out[:, :1].repeat(1, 4, 1, 1) + alt_warp * out[:, 1:].repeat(1, 4, 1, 1)
         return out
 ## ---------------------- end Net[M] ---------------------
 
@@ -276,7 +268,7 @@ class MergeNetMP(nn.Module):
         out = F.softmax(out, dim = 1)
         out = ref * out[:, :1].repeat(1, 4, 1, 1) + alt_warp * out[:, 1:].repeat(1, 4, 1, 1)
         #         out = self.layer5(out)
-        out = self.layer6(out)
+#         out = self.layer6(out)
         return out
 ## ---------------------- end Net[MP] ---------------------
 
