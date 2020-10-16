@@ -133,7 +133,9 @@ eval_transformer =  GroupComposed([
 
 def raw_normalize(*raw_imgs): 
     ## may include quantization error?
-    return [((img - img.min())/(img.max()-img.min())).astype(np.float32) for img in raw_imgs]
+    #return [((img - img.min())/(img.max() - img.min())).astype(np.float32) for img in raw_imgs]
+    #[(img/2.0**np.ceil(np.log2(img.max()))).astype(np.float32) for img in raw_imgs] #[img.astype(np.float32) for img in raw_imgs]#
+    return [img.astype(np.float32) for img in raw_imgs]
 
 def paired_normalize(inputs, gt, percentage = 99.9):
     thres = np.percentile(gt, percentage)
@@ -141,21 +143,19 @@ def paired_normalize(inputs, gt, percentage = 99.9):
 
 class HDRDataset(Dataset):
 
-    def __init__(self, transform = None, length = 1000):
+    def __init__(self, transform = None, length = 500, input_path = 'data/inputs_1015a.npy', gt_path = 'data/gt_1015a.npy'):
         self.transform = transform
-        self.inputs = np.load('data/inputs_1014.npy').transpose(1, 2, 0) # 8x2174x3864
-        self.gt = np.load('data/gt_1014.npy')[np.newaxis].transpose(1, 2, 0)  # 1x2174x3864
-        #self.inputs = raw_normalize(*(np.split(self.inputs, self.inputs.shape[-1], axis=-1)), self.gt)
-        #self.inputs, self.gt = self.frames[:-1], self.frames[-1]  ## frames: list of N numpy array of size HxWx1
-                                                                    ## gt: numpy array of size HxWx1
+        self.inputs = np.load(input_path).transpose(1, 2, 0).astype(np.float32)/1023. # 8x2174x3864
+        self.gt = np.load(gt_path)[np.newaxis].transpose(1, 2, 0).astype(np.float32)/(1024.*8.-1.)  # 1x2174x3864
+
         self.length = length
     def __len__(self):
         return self.length
 
     def __getitem__(self, idx):
-        #if self.transform is not None:
         frames = raw_normalize(*(np.split(self.inputs, self.inputs.shape[-1], axis=-1)), self.gt)
-        frames = self.transform(*frames) ## 8x512x512
+        if self.transform is not None:
+            frames = self.transform(*frames) ## 8x512x512
         img = torch.cat(frames[:-1], dim=0) ## 1x512x512
         gt = frames[-1]
         return img, gt
@@ -226,27 +226,27 @@ def fetch_dataloader(params = None, types = 'train'):
 
     for split in ['train', 'val','test']:
         if split == 'train':
-#             dl = DataLoader(HDRDataset(train_transformer),
-#                             batch_size = params.batch_size, shuffle = True,
-#                             num_workers = int(params.num_workers),
-#                             pin_memory=params.cuda)
-            train_set = LlrawSet(transform = train_transformer)
-            sublist = list(range(0, len(train_set), 5))
-            train_subset = torch.utils.data.Subset(train_set, sublist)
-        
-            dl = DataLoader(train_subset,
+            dl = DataLoader(HDRDataset(train_transformer, 500),
                             batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
-        else:
-#             dl = DataLoader(HDRDataset(eval_transformer, 50),
-#                             batch_size = params.val_batch_size, shuffle = False,
+#             train_set = LlrawSet(transform = train_transformer)
+#             sublist = list(range(0, len(train_set), 5))
+#             train_subset = torch.utils.data.Subset(train_set, sublist)
+        
+#             dl = DataLoader(train_subset,
+#                             batch_size = params.batch_size, shuffle = True,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
-            dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
+        else:
+            dl = DataLoader(HDRDataset(eval_transformer, 50),
                             batch_size = params.val_batch_size, shuffle = False,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
+#             dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
+#                             batch_size = params.val_batch_size, shuffle = False,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
         dataloaders[split] = dl
 
     return dataloaders
