@@ -109,10 +109,10 @@ def stack_to_raw(rggb_stack):
 def viz_raw(raw_image):
     H, W = raw_image.shape
     viz_raw_img = np.zeros((H, W, 3), raw_image.dtype)
-    viz_raw_img[:-1:2, :-1:2, 0] = raw_img[:-1:2, :-1:2]
-    viz_raw_img[:-1:2, 1: :2, 1] = raw_img[:-1:2, 1: :2]
-    viz_raw_img[1: :2, :-1:2, 1] = raw_img[1: :2, :-1:2]
-    viz_raw_img[1: :2, 1: :2, 2] = raw_img[1: :2, 1: :2]
+    viz_raw_img[:-1:2, :-1:2, 0] = raw_image[:-1:2, :-1:2]
+    viz_raw_img[:-1:2, 1: :2, 1] = raw_image[:-1:2, 1: :2]
+    viz_raw_img[1: :2, :-1:2, 1] = raw_image[1: :2, :-1:2]
+    viz_raw_img[1: :2, 1: :2, 2] = raw_image[1: :2, 1: :2]
     return viz_raw_img
 
 def viz_stack(stack_raw):
