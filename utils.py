@@ -106,6 +106,26 @@ def stack_to_raw(rggb_stack):
     raw_img[1: :2, 1: :2] = rggb_stack[..., 3]
     return raw_img
 
+def viz_raw(raw_image):
+    H, W = raw_image.shape
+    viz_raw_img = np.zeros((H, W, 3), raw_image.dtype)
+    viz_raw_img[:-1:2, :-1:2, 0] = raw_img[:-1:2, :-1:2]
+    viz_raw_img[:-1:2, 1: :2, 1] = raw_img[:-1:2, 1: :2]
+    viz_raw_img[1: :2, :-1:2, 1] = raw_img[1: :2, :-1:2]
+    viz_raw_img[1: :2, 1: :2, 2] = raw_img[1: :2, 1: :2]
+    return viz_raw_img
+
+def viz_stack(stack_raw):
+    H, W, C = stack_raw.shape
+    assert C == 4
+    r, g1, g2, b = np.zeros((H, W, 3), stack_raw.dtype)
+    r[..., 0] = stack_raw[..., 0]
+    g1[..., 1] = stack_raw[..., 1]
+    g2[..., 1] = stack_raw[..., 2]
+    b[..., 2] = stack_raw[..., 3]
+    return r, g1, g2, b
+    
+
 def print_model_params(model):
     print("#total params:", sum(p.numel() for p in model.parameters()), end='')
     print(" | #trainable params:", sum(p.numel() for p in model.parameters() if p.requires_grad))
