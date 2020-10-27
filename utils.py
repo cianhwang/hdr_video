@@ -118,7 +118,11 @@ def viz_raw(raw_image):
 def viz_stack(stack_raw):
     H, W, C = stack_raw.shape
     assert C == 4
-    r, g1, g2, b = np.zeros((H, W, 3), stack_raw.dtype)
+    r = np.zeros((H, W, 3), stack_raw.dtype)
+    g1 = np.zeros((H, W, 3), stack_raw.dtype)
+    g2 = np.zeros((H, W, 3), stack_raw.dtype)
+    b = np.zeros((H, W, 3), stack_raw.dtype)
+    
     r[..., 0] = stack_raw[..., 0]
     g1[..., 1] = stack_raw[..., 1]
     g2[..., 1] = stack_raw[..., 2]
