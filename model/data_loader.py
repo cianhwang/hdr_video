@@ -167,7 +167,7 @@ class LlrawSet(Dataset):
     Currently do NOT support slice indexing
     """
     def __init__(self, n_samples = None,
-                 h5file = 'data/mh_lowlight_sep23/ll_dataset_sep23.hdf5',
+                 h5file = 'data/mh_lowlight_10bit_Oct22/ll_dataset_hdr_10bit_Oct22.hdf5',
                  frame_per_sample = 8,
                  transform = None,
                  pos='mid'):
@@ -211,6 +211,10 @@ class LlrawSet(Dataset):
             gt = np.array(db["gtvid_{:03d}".format(vid_ind)][first_frame_ind+self.ref_offset])[..., np.newaxis] ## H x W x 1
         noise_param = self.noise_params[vid_ind]
         
+        #### modified by Qian 10/27/20 ####
+        #### normalization ####
+        llvid = (llvid - 50.0)/(1023.0-50.0)
+        gt = gt/65535.0
         frames = raw_normalize(*(np.split(llvid, llvid.shape[-1],axis=-1)), gt)
         frames = self.transform(*frames)
         img = torch.cat(frames[:-1], dim=0)
@@ -226,27 +230,35 @@ def fetch_dataloader(params = None, types = 'train'):
 
     for split in ['train', 'val','test']:
         if split == 'train':
-            dl = DataLoader(HDRDataset(train_transformer, 500),
-                            batch_size = params.batch_size, shuffle = True,
-                            num_workers = int(params.num_workers),
-                            pin_memory=params.cuda)
-#             train_set = LlrawSet(transform = train_transformer)
-#             sublist = list(range(0, len(train_set), 5))
-#             train_subset = torch.utils.data.Subset(train_set, sublist)
-        
-#             dl = DataLoader(train_subset,
+#             dl = DataLoader(HDRDataset(train_transformer, 500),
 #                             batch_size = params.batch_size, shuffle = True,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
-        else:
-            dl = DataLoader(HDRDataset(eval_transformer, 50),
-                            batch_size = params.val_batch_size, shuffle = False,
+            train_set = LlrawSet(transform = train_transformer)
+            sublist = list(range(0, len(train_set), 5))
+            train_subset = torch.utils.data.Subset(train_set, sublist)
+        
+            dl = DataLoader(train_subset,
+                            batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
+        else:
+#             dl = DataLoader(HDRDataset(eval_transformer, 50),
+#                             batch_size = params.val_batch_size, shuffle = False,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
 #             dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
 #                             batch_size = params.val_batch_size, shuffle = False,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
+            test_set = LlrawSet(transform = eval_transformer)
+            sublist = list(range(2, len(test_set), 50))
+            test_subset = torch.utils.data.Subset(test_set, sublist)  
+            dl = DataLoader(test_subset,
+                            batch_size = params.val_batch_size, shuffle = False,
+                            num_workers = int(params.num_workers),
+                            pin_memory=params.cuda)
+
         dataloaders[split] = dl
 
     return dataloaders
