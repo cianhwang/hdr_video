@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import model_utils
 from tqdm import tqdm
 import net
@@ -96,17 +96,19 @@ def train_and_evaluate(model, writer, train_dataloader, val_dataloader, optimize
         restore_path = os.path.join(args.ckpt_dir, args.restore_file + '.pth.tar')
         model, optimizer, start_epoch, best_val_loss = model_utils.load_checkpoint(restore_path, model, optimizer)
 
-#     scheduler = MultiStepLR(optimizer, milestones=[2, 5], gamma=.99)
+    scheduler = ReduceLROnPlateau(
+            optimizer, "min", patience=params.lr_patience, min_lr = 1e-4
+        )
 
     for epoch in range(start_epoch, params.num_epochs):
 
-        print('\nEpoch: {}/{}'.format(epoch+1, params.num_epochs))
+        print('\nEpoch: {}/{} -- LR: {:.6f}'.format(epoch+1, params.num_epochs, optimizer.param_groups[0]["lr"]))
 
         train_loss = train(epoch, model, writer, optimizer, loss_fn, train_dataloader, params)
 
         val_loss = evaluate(epoch, model, writer, loss_fn, val_dataloader, params)
         
-#         scheduler.step()
+        scheduler.step(val_loss)
 
         is_best = val_loss <= best_val_loss
 
@@ -158,6 +160,7 @@ if __name__=='__main__':
 
     model = net.Net(args).cuda() if params.cuda else net.Net(args)
 
+#     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate, momentum = 0.9)
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = params.learning_rate)
 
     loss_fn = nn.L1Loss()
