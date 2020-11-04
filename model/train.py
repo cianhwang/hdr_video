@@ -68,7 +68,7 @@ def train(epoch, model, writer, optimizer, loss_fn, dataloader, params):
 
             loss_avg.update(loss.item())
 
-            t.set_postfix(loss='{:.5f}'.format(loss_avg()))
+            t.set_postfix(loss='{:.5f}'.format(loss.item()))
             t.update()
             
             model.init_hidden()

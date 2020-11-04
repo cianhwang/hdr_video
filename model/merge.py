@@ -227,9 +227,9 @@ class MergeNetBP(nn.Module):
 
         self.warp = warp
         
-        self.layer0 = BiLstmBlock(8, 4)
+        self.layer0 = BiLstmBlock(8, 8)
 
-        self.layer1 = BasicBlock(8, 16)
+        self.layer1 = BasicBlock(16, 16)
         self.layer2 = BasicBlock(16, 32)
         self.layer3 = BasicBlock(32, 32)
         
