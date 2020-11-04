@@ -235,7 +235,7 @@ def fetch_dataloader(params = None, types = 'train'):
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
             train_set = LlrawSet(transform = train_transformer)
-            sublist = list(range(0, len(train_set), 5))
+            sublist = list(range(0, len(train_set), 50))
             train_subset = torch.utils.data.Subset(train_set, sublist)
         
             dl = DataLoader(train_subset,
@@ -252,7 +252,7 @@ def fetch_dataloader(params = None, types = 'train'):
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
             test_set = LlrawSet(transform = eval_transformer)
-            sublist = list(range(2, len(test_set), 50))
+            sublist = list(range(22, len(test_set), 500))
             test_subset = torch.utils.data.Subset(test_set, sublist)  
             dl = DataLoader(test_subset,
                             batch_size = params.val_batch_size, shuffle = False,

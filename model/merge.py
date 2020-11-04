@@ -374,6 +374,56 @@ class MergeNetMP(nn.Module):
         return out
 ## ---------------------- end Net[MP] ---------------------
 
+## ---------------------- begin Net[MBP] ---------------------
+class MergeNetMBP(nn.Module):
+
+    def __init__(self):
+        super(MergeNetMBP, self).__init__()
+
+        self.warp = warp
+
+        self.layer1 = BiLstmBlock(8, 8)
+        self.layer2 = BasicBlock(16, 32)
+        self.layer3 = BasicBlock(32, 32)
+#         self.layer4 = nn.Conv2d(32, 2, kernel_size=1, stride=1, bias=True)
+        self.layer4 = nn.Conv2d(32, 2, kernel_size=3, stride=1, padding=1,bias=True)
+        self.hidden1 = None
+        self.hidden2 = None
+        
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Sequential):
+                for mm in m.modules():
+                    if isinstance(mm, nn.Conv2d):
+                        nn.init.kaiming_normal_(mm.weight, mode='fan_out', nonlinearity='relu')
+                    elif isinstance(mm, (nn.BatchNorm2d, nn.GroupNorm)):
+                        nn.init.constant_(mm.weight, 1)
+                        nn.init.constant_(mm.bias, 0)
+                
+    def init_hidden(self):
+        self.hidden1 = None
+        self.hidden2 = None
+
+    def forward(self, x):
+
+        ref = x[:, :4]
+        alt_warp = self.warp(x[:, 4:8], x[:, 8:])
+        out = torch.cat([ref, alt_warp], dim = 1)
+        bi_out, self.hidden1, self.hidden2 = self.layer1(out, self.hidden1, self.hidden2)
+        ref = ref + bi_out[:, :4] + bi_out[:, 8:12]
+        alt_warp = alt_warp + bi_out[:, 4:8] + bi_out[:, 12:]
+        out = self.layer2(bi_out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.softmax(out, dim = 1)
+        out = ref * out[:, :1].repeat(1, 4, 1, 1) + alt_warp * out[:, 1:].repeat(1, 4, 1, 1)
+        return out
+## ---------------------- end Net[MBP] ---------------------
+
 
 
 ## ---------------------- begin Net[S] ---------------------
@@ -420,7 +470,7 @@ class MergeNetS(nn.Module):
 
 
 if __name__ == '__main__':
-    model = MergeNetBP().cuda()
+    model = MergeNetMBP().cuda()
     print(model)
     model_utils.print_model_params(model)
     

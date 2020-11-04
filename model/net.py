@@ -1,5 +1,5 @@
 from pwc import Network as PWC
-from merge import MergeNet, MergeNetM, MergeNetS, MergeNetMP, MergeNetBP
+from merge import MergeNet, MergeNetM, MergeNetS, MergeNetMP, MergeNetBP, MergeNetMBP
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
