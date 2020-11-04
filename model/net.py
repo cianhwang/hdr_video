@@ -29,6 +29,8 @@ class Net(nn.Module):
             self.merge_net = MergeNetS()
         elif self.merge_ver == 'bp':
             self.merge_net = MergeNetBP()
+        elif self.merge_ver == 'mbp':
+            self.merge_net = MergeNetMBP()
         else:
             raise KeyError("MergeNet verion [{}] not found.".format(self.merge_ver))
 
