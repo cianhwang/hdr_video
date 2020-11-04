@@ -79,12 +79,12 @@ class GroupRandomCrop(object):
         return [TF.crop(img, i, j, h, w) for img in images]
     
 class GroupRawRandomCrop(object):
-    def __init__(self, size):
+    def __init__(self, size, offset = 0):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
         else:
             self.size = size
-
+        self.offset = offset
     @staticmethod
     def get_params(img, output_size):
 
@@ -93,8 +93,8 @@ class GroupRawRandomCrop(object):
         if w == tw and h == th:
             return 0, 0, h, w
 
-        i = random.randint(0, h - th) //2 * 2
-        j = random.randint(0, w - tw) //2 * 2
+        i = random.randint(0, h - th) //2 * 2 + self.offset
+        j = random.randint(0, w - tw) //2 * 2 + self.offset
         return i, j, th, tw
 
     def __call__(self, *images):
@@ -120,8 +120,8 @@ class GroupComposed(object):
 train_transformer = GroupComposed([
     GroupToPILImage(mode = 'F'),
     GroupRawRandomCrop(512),
-    GroupRandomHorizontalFlip(),
-    GroupRandomVerticalFlip(),
+#     GroupRandomHorizontalFlip(),
+#     GroupRandomVerticalFlip(),
     GroupToTensor()
 ])
 
@@ -145,8 +145,8 @@ class HDRDataset(Dataset):
 
     def __init__(self, transform = None, length = 500, input_path = 'data/inputs_1015a.npy', gt_path = 'data/gt_1015a.npy'):
         self.transform = transform
-        self.inputs = np.load(input_path).transpose(1, 2, 0).astype(np.float32)/1023. # 8x2174x3864
-        self.gt = np.load(gt_path)[np.newaxis].transpose(1, 2, 0).astype(np.float32)/(1024.*8.-1.)  # 1x2174x3864
+        self.inputs = np.load(input_path)[:, ::-1, ::-1].transpose(1, 2, 0).astype(np.float32)/1023. # 8x2174x3864
+        self.gt = np.load(gt_path)[np.newaxis][:, ::-1, ::-1].transpose(1, 2, 0).astype(np.float32)/(1024.*8.-1.)  # 1x2174x3864
 
         self.length = length
     def __len__(self):
