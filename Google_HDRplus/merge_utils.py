@@ -5,6 +5,7 @@ def merge_distance(T, I_tile, threshold = 1420.4/4): #1037.916
     assert T.shape == I_tile.shape
     weight = 0
     dist = np.linalg.norm(T.flatten()-I_tile.flatten(), ord=1)
+#     print(dist)
     if dist < threshold:
         weight = 1
     return weight
