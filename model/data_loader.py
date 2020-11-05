@@ -79,12 +79,11 @@ class GroupRandomCrop(object):
         return [TF.crop(img, i, j, h, w) for img in images]
     
 class GroupRawRandomCrop(object):
-    def __init__(self, size, offset = 0):
+    def __init__(self, size):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
         else:
             self.size = size
-        self.offset = offset
     @staticmethod
     def get_params(img, output_size):
 
@@ -93,8 +92,8 @@ class GroupRawRandomCrop(object):
         if w == tw and h == th:
             return 0, 0, h, w
 
-        i = random.randint(0, h - th) //2 * 2 + self.offset
-        j = random.randint(0, w - tw) //2 * 2 + self.offset
+        i = random.randint(0, h - th) //2 * 2
+        j = random.randint(0, w - tw) //2 * 2
         return i, j, th, tw
 
     def __call__(self, *images):
@@ -143,7 +142,7 @@ def paired_normalize(inputs, gt, percentage = 99.9):
 
 class HDRDataset(Dataset):
 
-    def __init__(self, transform = None, length = 500, input_path = 'data/inputs_1015a.npy', gt_path = 'data/gt_1015a.npy'):
+    def __init__(self, transform = None, length = 500, input_path = 'data/inputs_1015c.npy', gt_path = 'data/gt_1015c.npy'):
         self.transform = transform
         self.inputs = np.load(input_path)[:, ::-1, ::-1].transpose(1, 2, 0).astype(np.float32)/1023. # 8x2174x3864
         self.gt = np.load(gt_path)[np.newaxis][:, ::-1, ::-1].transpose(1, 2, 0).astype(np.float32)/(1024.*8.-1.)  # 1x2174x3864
@@ -235,7 +234,7 @@ def fetch_dataloader(params = None, types = 'train'):
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
             train_set = LlrawSet(transform = train_transformer)
-            sublist = list(range(0, len(train_set), 50))
+            sublist = list(range(0, len(train_set), 5))
             train_subset = torch.utils.data.Subset(train_set, sublist)
         
             dl = DataLoader(train_subset,
@@ -243,21 +242,21 @@ def fetch_dataloader(params = None, types = 'train'):
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
         else:
-#             dl = DataLoader(HDRDataset(eval_transformer, 50),
-#                             batch_size = params.val_batch_size, shuffle = False,
-#                             num_workers = int(params.num_workers),
-#                             pin_memory=params.cuda)
+            dl = DataLoader(HDRDataset(eval_transformer, 50),
+                            batch_size = params.val_batch_size, shuffle = False,
+                            num_workers = int(params.num_workers),
+                            pin_memory=params.cuda)
 #             dl = DataLoader(LlrawSet(transform = eval_transformer, n_samples = 50),
 #                             batch_size = params.val_batch_size, shuffle = False,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
-            test_set = LlrawSet(transform = eval_transformer)
-            sublist = list(range(22, len(test_set), 500))
-            test_subset = torch.utils.data.Subset(test_set, sublist)  
-            dl = DataLoader(test_subset,
-                            batch_size = params.val_batch_size, shuffle = False,
-                            num_workers = int(params.num_workers),
-                            pin_memory=params.cuda)
+#             test_set = LlrawSet(transform = eval_transformer)
+#             sublist = list(range(22, len(test_set), 500))
+#             test_subset = torch.utils.data.Subset(test_set, sublist)  
+#             dl = DataLoader(test_subset,
+#                             batch_size = params.val_batch_size, shuffle = False,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
 
         dataloaders[split] = dl
 
