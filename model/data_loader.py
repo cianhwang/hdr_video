@@ -164,10 +164,10 @@ class HDRDataset(Dataset):
 ## ----------------------begin HDRDataset_1K ------------------------
 class HDRDataset_1K(Dataset):
 
-    def __init__(self, transform = None, length = 500, input_path = 'data/1103_lowlight_inputs.npy', gt_path = 'data/1103_lowlight_gts.npy'):
+    def __init__(self, transform = None, length = 500, input_path = 'data/1104_HDR_inputs.npy', gt_path = 'data/1104_HDR_gts.npy'):
         self.transform = transform
-        self.inputs = np.load(input_path)[..., ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32)/32. # 8x2174x3864
-        self.gt = np.load(gt_path)[:, np.newaxis, ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32) /(32.*8.-1.)  # 1x2174x3864
+        self.inputs = np.load(input_path)[..., ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32)/255. # 8x2174x3864
+        self.gt = np.load(gt_path)[:, np.newaxis, ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32) /(256.*8.-1.)  # 1x2174x3864
         self.length = length
         self.n_samples = self.inputs.shape[0]
     def __len__(self):
