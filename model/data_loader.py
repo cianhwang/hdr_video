@@ -140,6 +140,7 @@ def paired_normalize(inputs, gt, percentage = 99.9):
     thres = np.percentile(gt, percentage)
     return torch.clamp(inputs, 0., thres)/thres, torch.clamp(gt, 0., thres)/thres
 
+## ----------------------begin HDRDataset_1K ------------------------
 class HDRDataset(Dataset):
 
     def __init__(self, transform = None, length = 500, input_path = 'data/inputs_1015c.npy', gt_path = 'data/gt_1015c.npy'):
@@ -158,6 +159,31 @@ class HDRDataset(Dataset):
         img = torch.cat(frames[:-1], dim=0) ## 1x512x512
         gt = frames[-1]
         return img, gt
+## ----------------------end HDRDataset_1K ------------------------
+
+## ----------------------begin HDRDataset_1K ------------------------
+class HDRDataset_1K(Dataset):
+
+    def __init__(self, transform = None, length = 500, input_path = 'data/1103_lowlight_inputs.npy', gt_path = 'data/1103_lowlight_gts.npy'):
+        self.transform = transform
+        self.inputs = np.load(input_path)[..., ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32)/32. # 8x2174x3864
+        self.gt = np.load(gt_path)[:, np.newaxis, ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32) /(32.*8.-1.)  # 1x2174x3864
+        self.length = length
+        self.n_samples = self.inputs.shape[0]
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        inputs = self.inputs[idx%(self.n_samples)]
+        gt = self.gt[idx%(self.n_samples)]
+        frames = raw_normalize(*(np.split(inputs, inputs.shape[-1], axis=-1)), gt)
+        if self.transform is not None:
+            frames = self.transform(*frames) ## 8x512x512
+        img = torch.cat(frames[:-1], dim=0) ## 1x512x512
+        gt = frames[-1]
+        return img, gt
+## ----------------------end HDRDataset_1K ------------------------
+
 
 ## ----------------------begin Minghao llrawset---------------------
 class LlrawSet(Dataset):
