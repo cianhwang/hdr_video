@@ -3,6 +3,6 @@
     "lr_patience": 20,
     "batch_size": 2,
     "val_batch_size": 2,
-    "num_epochs": 800,
+    "num_epochs": 200,
     "num_workers": 4
 }

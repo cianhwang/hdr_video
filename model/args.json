@@ -1,8 +1,8 @@
 {
-  "note": null,
-  "merge_ver": "p",
-  "ckpt_dir": "ckpt/1003_00_42/",
-  "logs_dir": "runs/1003_00_42/",
+  "note": "train and eval on 1k hdr data captured on 11/04",
+  "merge_ver": "m",
+  "ckpt_dir": "ckpt/1104_12_19_mod/",
+  "logs_dir": "runs/1104_12_19_mod/",
   "model_dir": ".",
   "restore_file": "last",
   "small": false,
