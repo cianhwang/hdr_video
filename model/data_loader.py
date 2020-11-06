@@ -164,18 +164,23 @@ class HDRDataset(Dataset):
 ## ----------------------begin HDRDataset_1K ------------------------
 class HDRDataset_1K(Dataset):
 
-    def __init__(self, transform = None, length = 500, input_path = 'data/1104_HDR_inputs.npy', gt_path = 'data/1104_HDR_gts.npy'):
+    def __init__(self, transform = None, length = 500, input_path = 'data/1104_HDR_inputs.npy', gt_path = 'data/1104_HDR_gts.npy', is_train = True):
         self.transform = transform
-        self.inputs = np.load(input_path)[..., ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32)/255. # 8x2174x3864
-        self.gt = np.load(gt_path)[:, np.newaxis, ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32) /(256.*8.-1.)  # 1x2174x3864
+        self.inputs = np.load(input_path)[..., ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32)/255. # 5x8x546x1288
+        self.gt = np.load(gt_path)[:, np.newaxis, ::-1, ::-1].transpose(0, 2, 3, 1).astype(np.float32) /(256.*8.-1.)  # 5x1x546x1288
         self.length = length
         self.n_samples = self.inputs.shape[0]
+        self.is_train = is_train
     def __len__(self):
         return self.length
 
     def __getitem__(self, idx):
-        inputs = self.inputs[idx%(self.n_samples)]
-        gt = self.gt[idx%(self.n_samples)]
+        if self.is_train:
+            inputs = self.inputs[idx%(self.n_samples-1)]
+            gt = self.gt[idx%(self.n_samples-1)]
+        else:
+            inputs = self.inputs[-1]
+            gt = self.gt[-1]
         frames = raw_normalize(*(np.split(inputs, inputs.shape[-1], axis=-1)), gt)
         if self.transform is not None:
             frames = self.transform(*frames) ## 8x512x512
@@ -259,16 +264,25 @@ def fetch_dataloader(params = None, types = 'train'):
 #                             batch_size = params.batch_size, shuffle = True,
 #                             num_workers = int(params.num_workers),
 #                             pin_memory=params.cuda)
-            train_set = LlrawSet(transform = train_transformer)
-            sublist = list(range(0, len(train_set), 5))
-            train_subset = torch.utils.data.Subset(train_set, sublist)
-        
-            dl = DataLoader(train_subset,
+            dl = DataLoader(HDRDataset_1K(train_transformer, 50),
                             batch_size = params.batch_size, shuffle = True,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
+
+#             train_set = LlrawSet(transform = train_transformer)
+#             sublist = list(range(0, len(train_set), 5))
+#             train_subset = torch.utils.data.Subset(train_set, sublist)
+        
+#             dl = DataLoader(train_subset,
+#                             batch_size = params.batch_size, shuffle = True,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
         else:
-            dl = DataLoader(HDRDataset(eval_transformer, 50),
+#             dl = DataLoader(HDRDataset(eval_transformer, 50),
+#                             batch_size = params.val_batch_size, shuffle = False,
+#                             num_workers = int(params.num_workers),
+#                             pin_memory=params.cuda)
+            dl = DataLoader(HDRDataset_1K(eval_transformer, 10, is_train = False),
                             batch_size = params.val_batch_size, shuffle = False,
                             num_workers = int(params.num_workers),
                             pin_memory=params.cuda)
