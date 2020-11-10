@@ -158,3 +158,9 @@ def add_window(img, left_x, right_x, color = 'r', win_size = 256):
     img_w_win = np.clip(img_w_win, 0, 255)
     return img_w_win.astype(np.uint8)
 
+def psnr(img1, img2, PIXEL_MAX = 1.0):
+    mse = np.mean( (img1 - img2) ** 2 )
+    if mse == 0:
+        return 100
+    return 10 * np.log10(PIXEL_MAX**2 / mse)
+
