@@ -1,4 +1,4 @@
-HDResNet
+# HDResNet
 
 Requirements: saved in file environment.yaml
         to install the conda environment: conda env create --file environment.yaml
